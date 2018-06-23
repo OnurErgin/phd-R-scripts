@@ -1,0 +1,126 @@
+
+source("./probSeqFunctions.R")
+
+run.verbose <- TRUE
+produceOutput <- FALSE
+debugging <- FALSE
+experimentSet <- 1:1000
+maxSubSeqSize <- 3
+
+Nx <- 10; Ny <- 2; dx <- 1; dy <- 1.3
+Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)
+numnodes <- length(Truth)
+refnode <- 0
+topQuantile <- 1
+rssMaxDifference <- 0
+
+directory <- paste("./simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m/",sep="")
+
+is2DVerdictCorrect <- function(resultSeq, Truth) {
+  resultGrid <- matrix(resultSeq, nrow=Ny, byrow=TRUE)
+  # reverse Even Rows
+  for(r in 1:Ny){
+    if(r %% 2 == 0)
+      resultGrid[r,] <- rev(resultGrid[r,])
+  }
+  verdict <- all(resultGrid == Truth)
+  return(verdict)
+}
+
+totalSuccess <- 0
+for(expNo in experimentSet)
+{   
+  startTime <- proc.time()
+  
+  TRACE_FILE <- paste(directory,"2dSim-",Nx,"x",Ny,"-",dx,"mX",dy,"m-",expNo,".txt",sep="")
+  #TRACE_FILE <- paste(directory,inFilePrefix,expNo,inFileSuffix, sep="")
+  
+  if ("packets" %in% ls() && debugging) {
+    ; # do not reload packets
+  }
+  else # not debugging
+  {
+    cat("Loading:",TRACE_FILE, "\n")	
+    packets <- read.table(TRACE_FILE,  na.strings="", header=TRUE)
+  }
+  packets <- subset(packets, sender %in% Truth & receiver %in% Truth)
+  packets <- droplevels(packets)
+  packets$time  <- 0
+  packets$power <- 0
+  
+  ## DEBUG SET
+  if (debugging) {
+    print("Debug set.")
+    packets <- subset(packets,receiver %in% debugSet & sender %in% debugSet)
+  }
+  
+  # 	analyse <- matrix(data = NA, nrow = 4, ncol = 11, byrow = TRUE, dimnames = list(NULL,c("expNo", "Rank", "isCorrect", "prob", 
+  #                                                                                          "verifyRank", "verifyIsCorrect", "verifyProb", 
+  #                                                                                          "match", "JointProb", "ComputedSeq", "verifySeq")))
+  
+  analyse <- data.frame(expNo=integer(), Rank=integer(), isCorrect=logical(), prob=double(),
+                        verifyRank=integer(), verifyIsCorrect=logical(), verifyProb=double(), 
+                        match=logical(), jointProb=double(), computedSeq=character(), verifySeq=character(),
+                        stringsAsFactors=FALSE)
+  
+  print("Finding Sequence")
+  probabilitySeqDF <- findProbSequences(packets,refnode, produceOutput=produceOutput, verbose=run.verbose);
+  probOrder <- with(probabilitySeqDF,order(-prob))
+  probabilitySeqDF <- probabilitySeqDF[probOrder,]
+  
+  ## RESULT
+  print(probabilitySeqDF[1,])
+  winnerSeq <- probabilitySeqDF[1,1:numnodes] ; winnerSeq <- as.integer(unlist(winnerSeq))
+  verdict <- is2DVerdictCorrect(winnerSeq,Truth)
+  cat("Verdict is:", verdict,"\n"); 
+  
+  maxRankToCompare <- min(nrow(probabilitySeqDF),2)
+  for (mainRank in 1:maxRankToCompare)
+  {
+    cat("Verify", mainRank,"\n")
+    verifySeqDF <- findProbSequences(packets,refnode=probabilitySeqDF[mainRank,numnodes], produceOutput=produceOutput, verbose=run.verbose);
+    probOrder <- with(verifySeqDF,order(-prob))
+    verifySeqDF <- verifySeqDF[probOrder,]
+    cat("Verify", mainRank,"is", all(rev(verifySeqDF[1,1:numnodes])==Truth), "\n" )
+    
+    for (verifyRank in 1:maxRankToCompare) 
+    {
+      i <- (mainRank-1)*maxRankToCompare+verifyRank;
+      
+      analyse[i,"expNo"] <- expNo; 
+      
+      analyse[i,"Rank"] <- mainRank; 
+      winnerSeq <- probabilitySeqDF[mainRank,1:numnodes] ; winnerSeq <- as.integer(unlist(winnerSeq))
+      analyse[i,"isCorrect"] <- is2DVerdictCorrect(winnerSeq,Truth)
+      analyse[i,"prob"] <- probabilitySeqDF[mainRank,"prob"];
+      
+      analyse[i,"verifyRank"] <- verifyRank; 
+      winnerSeq <- verifySeqDF[verifyRank,1:numnodes] ; winnerSeq <- as.integer(unlist(winnerSeq))
+      analyse[i,"verifyIsCorrect"] <- is2DVerdictCorrect(rev(winnerSeq),Truth)
+      analyse[i,"verifyProb"] <- verifySeqDF[verifyRank,"prob"];
+      
+      analyse[i,"match"] <- all(probabilitySeqDF[mainRank,1:numnodes] == rev(verifySeqDF[verifyRank,1:numnodes]));
+      analyse[i,"jointProb"] <- probabilitySeqDF[mainRank,"prob"] * verifySeqDF[verifyRank,"prob"];
+      
+      analyse[i,"computedSeq"] <- paste(probabilitySeqDF[mainRank,1:numnodes], collapse=",");
+      analyse[i,"verifySeq"] <- paste(verifySeqDF[verifyRank,1:numnodes],collapse=",");
+    }
+  }
+  ## Print Elapsed Time
+  endTime <- proc.time()
+  print(endTime-startTime)
+  
+  if(verdict == TRUE)
+  {
+    totalSuccess <- totalSuccess +1
+  }
+  cat("TotalSUCCESS=",totalSuccess,"\n");
+  
+  print(analyse)
+  outputFileName <- paste("2D-analyze-",Nx,"x",Ny,"-",dx,"mX",dy,"m.txt",sep="")
+  write.table(analyse, file=outputFileName, sep=" ", append=TRUE, col.names=(expNo==experimentSet[1]), row.names=FALSE)
+  if (TRUE)
+  {
+    rm(packets)
+  }
+} # for expNo

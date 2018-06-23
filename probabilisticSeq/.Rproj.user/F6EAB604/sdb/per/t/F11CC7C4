@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1432643951506.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F11CC7C4",
+    "lastKnownWriteTime" : 4458505296,
+    "last_content_update" : 0,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "caption" : "matches",
+        "contentUrl" : "content?title=matches&file=375cbf16139a44e38c3c06b205263019.htm",
+        "displayedObservations" : 4,
+        "displayedVariables" : 11,
+        "totalObservations" : 4,
+        "variables" : 11
+    },
+    "relative_order" : 0,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

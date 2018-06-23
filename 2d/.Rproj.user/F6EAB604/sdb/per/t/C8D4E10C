@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "rss_path_loss <- function(d, pt=0, fc=2.405e9, n=2, d0=1) {\n  lamda <- 2.998e8/fc;\n  pl <- -10*n*log10(lamda/(4*pi*d0)) + 10*n*log10(d/d0); #fixed -20*log10( .... -> 10*n*log10( ...\n  pt-pl\n}\n\nd_path_loss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {\n  lamda <- 2.998e8/fc;\n  pl0 <- -10*n*log10(lamda/(4*pi*d0));\n  d0*10^((pt-pr-pl0)/(10*n))\n}\n\nd_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {\n  lamda <- 2.998e8/fc;\n  pl = pt-pr\n  d <- d0 * 10^((pl + 10*n*log10(lamda/(4*pi*d0))) / (10*n));\n  return(d)\n}\n\n#wrong\nd_from_mw <- function (Pr, Pt = 1, fc=2.405e9, n=3) {\n  lamda <- 2.998e8/fc;\n  lamda/(4 * pi * ((Pr/Pt)^(1/n)))\n}\n\nmw2dbm <- function (milliW) { dBm <- 10*log10((milliW)); return(dBm) }\ndbm2mw <- function (dBm)   { milliW <- 10^(dBm/10); return(milliW) }",
+    "created" : 1421794920113.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2710893216",
+    "id" : "C8D4E10C",
+    "lastKnownWriteTime" : 1405430524,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/AllScripts/commonFunctions.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "relative_order" : 13,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

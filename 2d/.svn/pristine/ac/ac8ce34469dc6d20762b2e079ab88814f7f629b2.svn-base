@@ -1,0 +1,23 @@
+source("./probSeqFunctions.R")
+
+
+twoBy10 <- 0:19
+#twoBy7 <- c(151, 153,12,10,149,147,89,88,144,145,93,92,139,141)
+Truth <- matrix(twoBy10,nrow=2,ncol=length(twoBy10)/2)
+refnode <- twoBy10[1]
+
+topQuantile <- 1
+rssMaxDifference <- 0
+
+file <- "2dSim-10x2-1.txt"
+
+packets <- read.table (file, header=TRUE)
+packets$time  <- 0
+packets$power <- 0
+head(packets)
+
+winningReceivers <- getSendersWinningReceivers(packets,theSender=0,includeList=Truth)["receiver",]
+max(table(winningReceivers))
+
+maxReceiver <- mostFreqReceiver(winningReceivers,1)
+maxReceiverProb <- findProbability(winningReceivers,maxReceiver,length(winningReceivers[!is.na(winningReceivers)]))

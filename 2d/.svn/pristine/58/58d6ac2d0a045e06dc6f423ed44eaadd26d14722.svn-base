@@ -1,0 +1,186 @@
+
+pruneThreshold <- 2
+source("probSeqFunctions-fixedPrune.R")
+#source("probSeqFunctions.R")
+
+run.verbose <- FALSE
+produceOutput <- FALSE # for probabilitySeqDF and probabilitiesDF. This file will produce output anyways
+debugging <- FALSE
+maxSubSeqSize <- 3
+
+#Nx <- 2; Ny <- 7; dx <- 2; dy <- 3;
+Nx <- 5; Ny <- 4; dx <- 5; dy <- 10; 
+
+sd_noise_dbm <- -80#-75#-70#-65#-60
+TESTBED <- FALSE; tb_name <- "SetF"
+
+if(TESTBED) {
+  experimentSet <- 2:693
+  directory <- "/Users/ergin/phd/R/measurements/4thFl-NorthWindow/"
+  #directory <- "/lhome/ergin/measurements/4thFloor/4x7/"
+  if (tb_name == "SetC"){
+    Nx <- 2; Ny <- 7
+    Truth <- matrix(c(151,152,12,13,149,150,89,90,144,143,93,94,139,140), nrow=Ny, byrow= TRUE)
+    refnode <- 151
+    #directory <- "/Users/ergin/phd/R/measurements/interferenceMeasurements/2D-NorthSide/nointerference/"
+  } else 
+  if (tb_name == "SetD"){
+    #Truth <- matrix(c(154,152,11,13,148,150,15,90,146,143,91,94,142,140), nrow=7, byrow= TRUE)
+    Nx <- 7; Ny <- 2
+    Truth <- matrix(c(152,13,150,90,143,94,140,153,10,147,88,145,92,141), nrow=Ny, byrow= TRUE)
+    refnode <- 152
+  } else 
+  if (tb_name == "SetE"){
+    #Truth <- matrix(c(154,152,11,13,148,150,15,90,146,143,91,94,142,140), nrow=7, byrow= TRUE)
+    Nx <- 7; Ny <- 2
+    Truth <- matrix(c(151,12,149,89,144,93,139,153,10,147,88,145,92,141), nrow=Ny, byrow= TRUE)
+    refnode <- 151
+  } else 
+  if (tb_name == "SetF"){
+    #Truth <- matrix(c(154,152,11,13,148,150,15,90,146,143,91,94,142,140), nrow=7, byrow= TRUE)
+    Nx <- 7; Ny <- 2
+    Truth <- matrix(c(152,13,150,90,143,94,140,154,11,148,15,146,91,142), nrow=Ny, byrow= TRUE)
+    refnode <- 152
+  } else 
+  if (tb_name == "SetG"){
+    #Truth <- matrix(c(154,152,11,13,148,150,15,90,146,143,91,94,142,140), nrow=7, byrow= TRUE)
+    Nx <- 7; Ny <- 2
+    Truth <- matrix(c(151,12,149,89,144,93,139,154,11,148,15,146,91,142), nrow=Ny, byrow= TRUE)
+    refnode <- 151
+  }
+} else { # Not if(TESTBED)
+  experimentSet <- 1:100
+  Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)
+  refnode <- 0
+  directory <- paste("./simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m-Noise",sd_noise_dbm,"dbm/",sep="")
+}
+numnodes <- length(Truth)
+topQuantile <- 1
+rssMaxDifference <- 0 
+
+oldpwd <- getwd();
+# Put output files into the measurement directories.
+# setwd(directory); directory <- "./"
+
+if(TESTBED) {
+  outputFileName <- paste("2D-analyze-",Nx,"x",Ny,"-testbed",tb_name,"-Prune",pruneThreshold,".txt",sep="")
+} else
+  outputFileName <- paste("2D-analyze-",Nx,"x",Ny,"-",dx,"mX",dy,"m-Prune",pruneThreshold,"-Noise",sd_noise_dbm,"dbm.txt",sep="")
+
+is2DVerdictCorrect <- function(resultSeq, Truth) {
+  resultGrid <- matrix(resultSeq, nrow=Ny, byrow=TRUE)
+  # reverse Even Rows
+  for(r in 1:Ny){
+    if(r %% 2 == 0)
+      resultGrid[r,] <- rev(resultGrid[r,])
+  }
+  verdict <- all(resultGrid == Truth)
+  return(verdict)
+}
+
+totalSuccess <- 0
+for(expNo in experimentSet)
+{   
+  startTime <- proc.time()
+  
+  if(TESTBED) {
+    TRACE_FILE <- paste(directory,"seq16ch_",expNo,".txt",sep="")
+  } else
+    TRACE_FILE <- paste(directory,"2dSim-",Nx,"x",Ny,"-",dx,"mX",dy,"m-",expNo,".txt",sep="")
+  #TRACE_FILE <- paste(directory,inFilePrefix,expNo,inFileSuffix, sep="")
+  
+  if ("packets" %in% ls() && debugging) {
+    ; # do not reload packets
+  }
+  else # not debugging
+  {
+    if(TESTBED) {
+      cat("Loading:",TRACE_FILE, "\n")  
+      packets <- read.table(TRACE_FILE, sep="\t", na.strings="", col.names=c("receiver", "sender", "channel", "rssi", "power", "time", "packetnum"), colClasses=c(rep("numeric",3), "numeric", "factor", "character", "numeric"), header=FALSE)
+    } else {
+        cat("Loading:",TRACE_FILE, "\n")	
+        packets <- read.table(TRACE_FILE,  na.strings="", header=TRUE)
+      }
+  }
+  packets <- subset(packets, sender %in% Truth & receiver %in% Truth)
+  packets <- droplevels(packets)
+  packets$time  <- 0
+  packets$power <- 0
+  
+  ## DEBUG SET
+  if (debugging) {
+    print("Debug set.")
+    packets <- subset(packets,receiver %in% debugSet & sender %in% debugSet)
+  }
+  
+  # 	analyse <- matrix(data = NA, nrow = 4, ncol = 11, byrow = TRUE, dimnames = list(NULL,c("expNo", "Rank", "isCorrect", "prob", 
+  #                                                                                          "verifyRank", "verifyIsCorrect", "verifyProb", 
+  #                                                                                          "match", "JointProb", "ComputedSeq", "verifySeq")))
+  
+  analyse <- data.frame(expNo=integer(), Rank=integer(), isCorrect=logical(), prob=double(),
+                        verifyRank=integer(), verifyIsCorrect=logical(), verifyProb=double(), 
+                        match=logical(), jointProb=double(), computedSeq=character(), verifySeq=character(),
+                        stringsAsFactors=FALSE)
+  
+  print("Finding Sequence")
+  probabilitySeqDF <- findProbSequences(packets,refnode, produceOutput=produceOutput, verbose=run.verbose);
+  probOrder <- with(probabilitySeqDF,order(-prob))
+  probabilitySeqDF <- probabilitySeqDF[probOrder,]
+  
+  ## RESULT
+  print(probabilitySeqDF[1,])
+  winnerSeq <- probabilitySeqDF[1,1:numnodes] ; winnerSeq <- as.integer(unlist(winnerSeq))
+  verdict <- is2DVerdictCorrect(winnerSeq,Truth)
+  cat("Verdict is:", verdict,"\n"); 
+  
+  maxRankToCompare <- min(nrow(probabilitySeqDF),2)
+  for (mainRank in 1:maxRankToCompare)
+  {
+    cat("Verify", mainRank,"\n")
+    verifySeqDF <- findProbSequences(packets,refnode=probabilitySeqDF[mainRank,numnodes], produceOutput=produceOutput, verbose=run.verbose);
+    probOrder <- with(verifySeqDF,order(-prob))
+    verifySeqDF <- verifySeqDF[probOrder,]
+    cat("Verify", mainRank,"is", all(rev(verifySeqDF[1,1:numnodes])==Truth), "\n" )
+    
+    for (verifyRank in 1:maxRankToCompare) 
+    {
+      i <- (mainRank-1)*maxRankToCompare+verifyRank;
+      
+      analyse[i,"expNo"] <- expNo; 
+      
+      analyse[i,"Rank"] <- mainRank; 
+      winnerSeq <- probabilitySeqDF[mainRank,1:numnodes] ; winnerSeq <- as.integer(unlist(winnerSeq))
+      analyse[i,"isCorrect"] <- is2DVerdictCorrect(winnerSeq,Truth)
+      analyse[i,"prob"] <- probabilitySeqDF[mainRank,"prob"];
+      
+      analyse[i,"verifyRank"] <- verifyRank; 
+      winnerSeq <- verifySeqDF[verifyRank,1:numnodes] ; winnerSeq <- as.integer(unlist(winnerSeq))
+      analyse[i,"verifyIsCorrect"] <- is2DVerdictCorrect(rev(winnerSeq),Truth)
+      analyse[i,"verifyProb"] <- verifySeqDF[verifyRank,"prob"];
+      
+      analyse[i,"match"] <- all(probabilitySeqDF[mainRank,1:numnodes] == rev(verifySeqDF[verifyRank,1:numnodes]));
+      analyse[i,"jointProb"] <- probabilitySeqDF[mainRank,"prob"] * verifySeqDF[verifyRank,"prob"];
+      
+      analyse[i,"computedSeq"] <- paste(probabilitySeqDF[mainRank,1:numnodes], collapse=",");
+      analyse[i,"verifySeq"] <- paste(verifySeqDF[verifyRank,1:numnodes],collapse=",");
+    }
+  }
+  ## Print Elapsed Time
+  endTime <- proc.time()
+  print(endTime-startTime)
+  
+  if(verdict == TRUE)
+  {
+    totalSuccess <- totalSuccess +1
+  }
+  cat("TotalSUCCESS=",totalSuccess,"\n");
+  
+  print(analyse)
+  
+  write.table(analyse, file=outputFileName, sep=" ", append=TRUE, col.names=(expNo==experimentSet[1]), row.names=FALSE)
+  if (TRUE)
+  {
+    rm(packets)
+  }
+} # for expNo
+setwd(oldpwd)

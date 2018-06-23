@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(plyr)\nlibrary(reshape)\nlibrary(MASS)\nlibrary(reshape2)\n\n\nd_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {\n  lamda <- 2.998e8/fc;\n  pl = pt-pr\n  d <- d0 * 10^((pl + 10*n*log10(lamda/(4*pi*d0))) / (10*n));\n  return(d)\n}\n\ndistanceTuples <- function (x, ref1, ref2)\n{ #browser()\n  all_receivers <- unique (x$receiver)\n  distances <- data.frame(receiver = numeric(0), refnode1 = numeric(0), refnode2 = numeric(0))\n  for (i in 1:length(all_receivers))\n  {\n    distances [i,1] <- all_receivers[i]\n    distances [i,2] <- subset(x, receiver == all_receivers[i] & sender == ref1, select=c(distance))\n    distances [i,3] <- subset(x, receiver == all_receivers[i] & sender == ref2, select=c(distance))\n  }\n  return(distances)\n}\n\neuclideanDist <- function (x1, x2, y1, y2) {sqrt( (x1-x2)^2 + (y1-y2)^2)}\n\nsuccessList <- c()\n\ndirectory <- \"inputs_simulation/equiDist/\"\ntrainingDataSet <- 1:5\n\nNx=10; Ny=5; dx=3; dy=3; sd_noise_dbm <- -45\nTruth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)\nrefnodes <- c(Truth[1,1],Truth[Ny,1]) # Two corners\n\n  startTime <- proc.time()\n\n  DATA_FILE <- paste(directory,\"distance_vector_stats_all_channels_\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm.csv.txt\",sep=\"\")\n  cat(\"Loading:\",DATA_FILE, \"\\n\")  \n  \n  allstats <- read.csv (DATA_FILE, header=TRUE);\n  experimentSet <- unique(allstats$run) ;\n\n  training_stats <- subset(allstats, sender %in% refnodes & !(receiver %in% refnodes) & run %in% trainingDataSet, select=c(sender,receiver,avg_max_50Q,run))\n\n  training_distances <- mutate(training_stats, distance=d_from_rss(pr=avg_max_50Q, n=3))\n  training_tuples <- distanceTuples(training_distances,refnodes[1],refnodes[2])\n      \n  # This line averages all the training measurements\n  training_tuples <- ddply(training_tuples,.(receiver), summarise, refnode1 = mean(refnode1), refnode2 = mean(refnode2))\n  \nfor(i in experimentSet[-trainingDataSet])\n{   \n  measurement_stats <- subset(allstats, sender %in% refnodes & !(receiver %in% refnodes) & run == i, select=c(sender,receiver,avg_rssi,run)) \n  measured_distances <- mutate(measurement_stats, distance=d_from_rss(pr=avg_rssi, n=3))\n  measured_tuples <- distanceTuples(measured_distances,refnodes[1],refnodes[2])\n  \n  closestPositions <- data.frame(receiver=as.numeric(measured_tuples$receiver),position=-1)\n  \n  for (rcvr in 1:nrow(measured_tuples)) \n  {\n    #Find closest distance from training_distances to rcvr\n    min_pos <- -1\n    mindist <- 10000\n    \n    for (tr in 1:nrow(training_tuples))\n    {\n      if (training_tuples[tr,\"receiver\"] %in% closestPositions$position)\n        next;\n      #print(training_tuples[tr,\"receiver\"])\n      \n      eucdist <- euclideanDist(measured_tuples[rcvr,\"refnode1\"], training_tuples[tr,\"refnode1\"], measured_tuples[rcvr,\"refnode2\"], training_tuples[tr,\"refnode2\"])\n      if (eucdist <= mindist)\n      {\n        min_pos <- training_tuples[tr,\"receiver\"]\n        mindist <- eucdist\n      }\n    }\n    closestPositions[rcvr, \"receiver\"] <- measured_tuples[rcvr, \"receiver\"]\n    closestPositions[rcvr, \"position\"] <- min_pos\n  }\n  result <- Truth\n  for (rr in 1:nrow(result))\n  {\n    for (cc in 1:ncol(result))\n    {\n      if (result[rr,cc] %in% refnodes)\n      {  \n        next;\n      } else { \n        result[rr,cc] <- as.numeric(subset(closestPositions, receiver == result[rr,cc], select=c(position)))\n      }\n    }\n  }\n  cat(\"Simulation: \", i ,\"\\n\")\n  print(result)\n  if (all(closestPositions$receiver == closestPositions$position))\n  {\n    successList <- c(successList,i)\n  }\n}\n\ncat(\"Total Success: \", length(successList) / (length(experimentSet) - length(trainingDataSet)),\"\\n\")\n",
+    "created" : 1436040083482.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2217146165",
+    "id" : "BDC595B2",
+    "lastKnownWriteTime" : 1438108490,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/fingerprinting.R",
+    "project_path" : "fingerprinting.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 28,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(ggplot2)\n\nsource(\"../commonFunctions.R\")\n\n# sourceDir <- \"../measurements/interferenceMeasurements/2D-NorthSide/controlledInterference2/\"\n# \n# expName <- strsplit(sourceDir,\"/\")[[1]][4]\n# \n# expRange <- 103:122+600\n# receiverid <- 90\n# expPlace <- \"4th Floor North\"\n# expName <- \"rcv90_no-controlled-interferer\"\n\n\n# readExperimentsFromFile <- TRUE\n# if (readExperimentsFromFile) {\n#   packets1 <- readExpFileRange(sourceDir,expRange)\n#   packets1 <- subset (packets1, receiver==receiverid)\n# }\n\nsourceDir <- \"../measurements/node_health_check_measurements/0-148/\"\n\nexpName <- strsplit(sourceDir,\"/\")[[1]][4]\n\nexpRange <- 1:5\n\nreadExperimentsFromFile <- TRUE\nif (readExperimentsFromFile)\n  packets1 <- readExpFileRange(sourceDir,expRange)\n\n\nif(FALSE){\n    p <- ggplot(packets1, aes(x=channel, y=rssi, group=channel))\n    #p <- p + stat_boxplot(geom='errorbar') # for horizontal lines on boxplot borders\n    #p <- p + geom_boxplot() #+ scale_y_continuous(breaks=c(min(packets$rssi):max(packets$rssi)))\n    p <- p + geom_point(color=\"blue\") + stat_summary(fun.y=mean, geom=\"line\", aes(group=1))  + stat_summary(fun.y=mean, geom=\"point\")\n    p <- p + facet_wrap(~sender, scales=\"free_x\")\n    p <- p + scale_x_continuous(breaks=unique(packets1$channel))\n    #p <- p + ggtitle(paste(expName,\"\\n\",length(expRange),\"runs, \",length(unique(packets$packetnum)),\"packets/channel \\n\",\"Senders:\")) + scale_fill_brewer(palette=\"PuOr\", type=\"div\")\n    p <- p + ggtitle(paste(expName,\"\\n\",expPlace,\"\\n\",\"Receiver:\",receiverid,\"\\n\",length(expRange),\"runs, \",length(unique(packets$packetnum)),\"packets/channel \\n\",\"Senders:\"))\n    print(p)\n} else \n  {\n    p <- ggplot(packets1, aes(x=channel, y=rssi, fill=receiver))\n    p <- p + stat_boxplot(geom='errorbar') # for horizontal lines on boxplot borders\n    p <- p + geom_boxplot() #+ scale_y_continuous(breaks=-70:-20, limits=c(-70,-20)) # + scale_y_continuous(breaks=c(min(packets$rssi):max(packets$rssi)))\n    p <- p + stat_boxplot(data=packets1, geom='errorbar') + geom_boxplot(data=packets1) \n    p <- p + facet_wrap(run~sender) \n    p <- p + scale_y_continuous(breaks=c(min(c(packets1$rssi,packets1$rssi)):max(c(packets1$rssi,packets1$rssi))))\n    p <- p + scale_fill_brewer(palette=\"PuOr\", type=\"div\")\n    p <- p + ggtitle (\"0 to 11 and 148 at different times\\n 5 runs each with 100 packets/channel\\n Transmitter-Receiver 1meter apart\\nSenders:\")# + ggtitle(paste(expName,\"\\n\",length(expRange),\"runs, \",length(unique(packets$packetnum)),\"packets/channel \\n\",\"Senders:\"))\n    print(p)\n  }\n\na <- subset(packets1, channel%in%c(15) & run==1)\nggplot(a,aes(x=rssi, fill=channel)) + geom_histogram()# geom_histogram(position=\"dodge\") + facet_wrap(~run)\n\nd <- 1\n\nrss_log_normal <- function(d, pt=0, fc=2.405e9, n=2, sigma=1, d0=1) {\n  lamda <- 2.998e8/fc;\n  pl <- -10*n*log10(lamda/(4*pi*d0)) + 10*n*log10(d/d0);\n  pl <- pl + rnorm(1,sd=sigma);\n  pt-pl\n}\nb<-c()\nfor (i in 1:100)\n{\n  b<-c(b,rss_log_normal(d))\n}\nb<-round(b)\nb<- as.data.frame(b)\nggplot(b,aes(x=b)) + geom_histogram()\n\n#ggsave(paste(\"plots/interference_\",expName,\".pdf\",sep=\"\"))\n\n#ggsave(paste(\"plots/health_AllCh_Com_\",expName,\".pdf\",sep=\"\"))\n",
+    "created" : 1404738584046.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1257502800",
+    "id" : "72EA21F1",
+    "lastKnownWriteTime" : 1406317728,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/AllScripts/RSSxChannel.R",
+    "project_path" : "RSSxChannel.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 0,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

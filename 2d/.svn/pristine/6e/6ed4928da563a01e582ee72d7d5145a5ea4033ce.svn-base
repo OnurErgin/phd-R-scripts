@@ -1,0 +1,37 @@
+###
+##
+# This file keeps results from 2D , MDS-MAP and RADAR NN-Fingerprinting for comparisons. 
+## R Studio Bug: if switch() cases start with a non-string '_', and you "source" it, then the R studio session fails.  eg switch (type,_5x4-3mx3m={...})
+
+
+getResult <- function (type) {
+  success <- c()
+  switch (type ,
+    "5x4-3mx3m"={
+      total <- 100
+      success[1] <- 93 # 2D-equiDistance 
+      success[2] <- -1 # MDS-MAP
+      success[3] <- -1 # Fingerprinting
+    },
+    
+    "5x4-5mx5m"={
+      total <- 100
+      success[1] <- 93 # 2D-equiDistance
+      success[2] <- -1 # MDS-MAP
+      success[3] <- -1 # Fingerprinting
+    },
+    "5x4-10mx10m"={
+      total <- 100
+      success[1] <- 91 # 2D-equiDistance
+      success[2] <- -1 # MDS-MAP
+      success[3] <- -1 # Fingerprinting
+    },
+    "10x5-3mx3m"={
+      total <- 100
+      success[1] <- 85 # 2D-equiDistance
+      success[2] <- -1 # MDS-MAP
+      success[3] <- -1 # Fingerprinting
+    }
+  )
+  print(success)
+}

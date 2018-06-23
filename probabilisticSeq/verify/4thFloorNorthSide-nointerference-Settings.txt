@@ -1,0 +1,7 @@
+"x"
+"1" "/Users/ergin/phd/R/measurements/2D-NothSide/nointerference/"
+"x"
+"1" 1
+"2" 300
+"x"
+"1" "verify/4thFloorNorthSide-nointerference-verify1-300.txt"

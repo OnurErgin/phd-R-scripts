@@ -1,0 +1,30 @@
+"x"
+"1" "/Users/ergin/phd/R/measurements/2D-NothSide/withinterference/1interferer/"
+"x"
+"1" 1
+"2" 300
+"x"
+"1" "verify/4thFloorNorthSide-nointerference-Reverse-verify1-300.txt"
+"x"
+"1" 152
+"2" 13
+"3" 150
+"4" 90
+"5" 143
+"6" 94
+"7" 140
+"x"
+"1" "/Users/ergin/phd/R/measurements/2D-NothSide/nointerference/"
+"x"
+"1" 1
+"2" 300
+"x"
+"1" "verify/4thFloorNorthSide-nointerference-Reverse-verify1-300.txt"
+"x"
+"1" 152
+"2" 13
+"3" 150
+"4" 90
+"5" 143
+"6" 94
+"7" 140

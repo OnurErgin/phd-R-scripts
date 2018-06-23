@@ -1,0 +1,195 @@
+## Have three reference nodes at one corner and generate the rest of the grid.
+
+
+cols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30
+
+Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)
+refnodes <- c(Truth[1,1],Truth[1,2], Truth[2,1])
+
+experimentSet <- 1:100
+
+#basedirectory <- "inputs_simulation/equiDist/3x3_ideal/"; subdirectory<-""
+#basedirectory <- "../measurements/simOut-5x4-3mX3m-Noise-30dbm/"; subdirectory<-""
+basedirectory <- "/Volumes/carme_lhome/R/2d/equiDist/"
+subdirectory <- paste("simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m-Noise",sd_noise_dbm,"dbm/",sep="")
+directory <- paste(basedirectory,subdirectory,sep="")
+
+pruneThreshold <- 2
+source("probSeqFunctions-fixedPrune.R")
+
+topQuantile <- 0.5
+rssMaxDifference <- 3
+
+run.verbose <- FALSE
+produceOutput <- FALSE # for probabilitySeqDF and probabilitiesDF. This file will produce output anyways
+
+totalSuccess <- 0
+failedExpNos <- c()
+######## START
+for(expNo in experimentSet)
+{   
+  startTime <- proc.time()
+    
+  TRACE_FILE <- paste(directory,"2dSim-",Nx,"x",Ny,"-",dx,"mX",dy,"m-",expNo,".txt",sep="")
+  cat("Loading:",TRACE_FILE, "\n")  
+  packets <- read.table(TRACE_FILE,  na.strings="", header=TRUE)
+  packets$time  <- 0
+  packets$power <- 0
+  
+  
+  result <- matrix(data=-1,nrow=rows, ncol=cols)
+  
+  result[1,1] <- Truth[1,1]
+  result[1,2] <- Truth[1,2]
+  result[2,1] <- Truth[2,1]
+  
+  findCorner <- function (packets, cornerNodes, excludes) 
+                {
+                  cornerRef <- cornerNodes[1]; sideRefs <- cornerNodes[2:3]
+                  winners1 <- getSendersWinningReceivers(allPackets=packets, theSender=cornerRef, excludeList=as.integer(excludes))
+                  #closestNodes <- mostFreqReceiver(winners,tIndex=1)
+                  
+                  #winners2 <- getSendersWinningReceivers(allPackets=packets, theSender=sideRefs[1], excludeList=as.integer(excludes))
+                  #winners3 <- getSendersWinningReceivers(allPackets=packets, theSender=sideRefs[2], excludeList=as.integer(excludes))
+                  winners2 <- getSendersWinningReceivers(allPackets=packets, theSender=sideRefs[1], includeList=winners1[1,])
+                  winners3 <- getSendersWinningReceivers(allPackets=packets, theSender=sideRefs[2], includeList=winners1[1,])
+                  
+                  #mostCommonReceiver <- as.integer(names(table(winners2[1,winners2[1,]%in%winners3[1,]])[1]))
+                  
+                  allWinners <- c(winners2[1,],winners3[1,])
+                  mostFrequentReceiver <- as.integer(names(rev(sort(table(allWinners)))[1]))
+                  
+                  return(mostFrequentReceiver)
+                }
+  
+  shortestDim <- min(dim(Truth))
+  
+  iterations <- 0
+  
+  
+  for (d in 2:shortestDim) {
+    if ( sum(result[1:d,1:d] == -1) == 1 )  # Just one -1 in the square
+    {
+      #result[d,d] <- iterations <- iterations + 1
+      cornerRef <- result[d-1,d-1]; sideRefs <- c(result[d-1,d],result[d,d-1]); 
+      
+      mostCommonReceiver <- findCorner(packets, c(cornerRef,sideRefs), result)
+      
+      result[d,d] <- mostCommonReceiver
+    }
+    else {
+      iterations <- iterations + 1
+      for (rr in 1:(d-1)) # find each row
+      {
+        #result[rr,d] <- iterations # discover here
+        if (rr == 1)
+        {
+          winners <- getSendersWinningReceivers(allPackets=packets, theSender=result[rr,d-1], excludeList=as.integer(result))
+          result[rr,d] <- mostFreqReceiver(winners,tIndex=1)
+        }
+        else # find as corners
+        {
+          result[rr,d] <- findCorner(packets, c(result[rr-1,d-1],result[rr-1,d], result[rr,d-1]), result)
+        }
+      }
+      #iterations <- iterations + 1
+      for (cc in 1:(d-1))
+      {
+        #result[d,cc] <- iterations
+        if (cc == 1)
+        { #if(d==4) 
+          #browser()
+          # Find top 3 candidates by top adjacent node
+          winners <- getSendersWinningReceivers(allPackets=packets, theSender=result[d-1,cc], excludeList=as.integer(result))
+         result[d,cc] <- mostFreqReceiver(winners,tIndex = 1)
+          if (FALSE){
+             top3winners <- as.integer(names(rev(sort(table(winners[1,])))[1:3]))
+            
+            if (d != shortestDim){ #Otherwise third candidate is equally distant from the right node
+              # Find another 2 candidates by node behind the top adjacent node
+              winners2 <- getSendersWinningReceivers(allPackets=packets, theSender=result[d-2,cc], includeList=as.integer(top3winners))
+              top2winners <- as.integer(names(rev(sort(table(winners2[1,])))[1:2]))
+              top2winners <- top2winners[!is.na(top2winners)]
+            } else{
+              
+              top2winners <- as.integer(names(rev(sort(table(winners[1,])))[1:2])) # or top3winners[1:2]
+            }
+            
+            # Find the candidate that is farther from result[d-1,cc+1] (the right adjacent node)
+            if(length(top2winners) == 1){
+              result[d,cc] <- top2winners[1]
+            } else {
+              winners3 <- getSendersWinningReceivers(allPackets=packets, theSender=result[d-1,cc+1], includeList=as.integer(top2winners))
+              NOTwinner <- mostFreqReceiver(winners3,tIndex=1)
+              
+                result[d,cc] <- top2winners[top2winners!=NOTwinner]
+              
+            }
+          }
+        }
+        else # find as corners
+        {
+          result[d,cc] <- findCorner(packets, c(result[d-1,cc-1], result[d-1,cc], result[d,cc-1]), result)
+        }
+      }
+      
+      if ( sum(result[1:d,1:d] == -1) == 1 )  # Just one -1 in the square
+      {
+        #result[d,d] <- iterations <- iterations + 1
+        cornerRef <- result[d-1,d-1]; sideRefs <- c(result[d-1,d],result[d,d-1]); 
+        
+        mostCommonReceiver <- findCorner(packets, c(cornerRef,sideRefs), result)
+        
+        result[d,d] <- mostCommonReceiver
+      }
+    }
+  }
+  #Find Remaining Columns
+  longestDim <- max(dim(Truth))
+  #if(FALSE)
+  for (d in (shortestDim+1):longestDim) { # Assuming, longer Dim is the Y direction
+    iterations <- iterations + 1
+    
+    for (rr in 1:shortestDim){
+      
+      if (result[rr,d] != -1)
+        next;
+      
+      #result[rr,d] <- iterations
+      winners <- getSendersWinningReceivers(allPackets=packets, theSender=result[rr,d-1], excludeList=as.integer(result))
+      candidate1 <- mostFreqReceiver(winners,tIndex=1)
+      candidate1P <- findProbabilityByName(winners[1,],candidate1)
+      
+      if (rr +1 <= shortestDim){
+        winners2 <- getSendersWinningReceivers(allPackets=packets, theSender=result[rr+1,d-1], excludeList=as.integer(result))
+        candidate2 <- mostFreqReceiver(winners2,tIndex=1)
+        candidate2P <- findProbabilityByName(winners2[1,],candidate2)
+      }
+      if (candidate2P > candidate1P){
+        result[rr+1,d] <- candidate2
+        
+        winners <- getSendersWinningReceivers(allPackets=packets, theSender=result[rr,d-1], excludeList=as.integer(result))
+        candidate1 <- mostFreqReceiver(winners,tIndex=1)
+        candidate1P <- findProbabilityByName(winners[1,],candidate1)
+      }
+       result[rr,d] <- candidate1
+    }
+  }
+  class(result) <- "integer"
+  print(result)
+  
+  if (all.equal(Truth,result) == TRUE) {
+    totalSuccess <- totalSuccess + 1
+    isSuccess <- TRUE
+  } else {
+    failedExpNos <- c(failedExpNos,expNo)
+    isSuccess <- FALSE
+  }
+  cat("Result is ", isSuccess, "\t total: ",totalSuccess, "/",length(failedExpNos)+totalSuccess, "\n")
+  
+  ## Print Elapsed Time
+  endTime <- proc.time()
+  print(endTime-startTime)
+  
+}
+cat("totalSuccess=",totalSuccess,"/",length(experimentSet) ,"\n")

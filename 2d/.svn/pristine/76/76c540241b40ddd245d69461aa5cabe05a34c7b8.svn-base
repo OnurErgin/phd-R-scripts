@@ -1,0 +1,247 @@
+# Reference: 
+# http://www.r-bloggers.com/7-functions-to-do-metric-multidimensional-scaling-in-r/
+
+library(plyr)
+library(reshape)
+library(MASS)
+library(smacof)
+library(vegan) # for procrustes
+library(ggplot2)
+
+#library(mapproj)
+
+#source("mds2matrix.R")
+
+#source("configuration.R")
+#source("commonFunctions.R")
+d_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {
+  lamda <- 2.998e8/fc;
+  pl = pt-pr
+  d <- d0 * 10^((pl + 10*n*log10(lamda/(4*pi*d0))) / (10*n));
+  return(d)
+}
+rc2xy <- function (r,c,dx, dy) {
+  x <- (c-1)*dx
+  y <- (r-1)*dy
+  return(c(x=x,y=y))
+}
+
+euclideanDist <- function (x1, x2, y1, y2) {sqrt( (x1-x2)^2 + (y1-y2)^2)}
+
+Nx<-5; Ny<-4; dx<-5; dy<-5; sd_noise_dbm <- -30
+Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)
+Anchornodes <- c(Truth[1,1],Truth[Ny,1],Truth[Ny,Nx]) # Three corners zB c(0,40,49)
+
+
+directory <- "inputs_simulation/equiDist/"
+DATA_FILE <- paste(directory,"distance_vector_stats_all_channels_",Nx,"x",Ny,"-",dx,"mX",dy,"m-Noise",sd_noise_dbm,"dbm.csv.txt",sep="")
+
+  #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_10x2-2mX3m-Noise45dbm.csv.txt"
+  #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_10x2-2mX3m-Noise30dbm.csv.txt"
+   #Nx=10; Ny=2; dx=2; dy=3;
+  # Truth <- matrix(0:19, byrow=TRUE, ncol=Nx);
+  
+    #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_5x4-2mX3m-Noise45dbm.csv.txt"
+    #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_5x4-2mX3m-Noise30dbm.csv.txt"
+     #Nx=5; Ny=4; dx=2; dy=3;
+    #Truth <- matrix(0:19, byrow=TRUE, ncol=Nx) 
+
+#refnode <- Truth[0]
+
+real_positions <- data.frame(node=numeric(length(Truth)),x=numeric(length(Truth)), y=numeric(length(Truth)))
+rp_i <- 1
+for (rrow in 1:Ny) {
+  for (ccol in 1:Nx) {
+    xy <- rc2xy(r=rrow,c=ccol,dx=dx,dy=dy)
+    #real_positions <- rbind(real_positions,c(Truth[rrow,ccol], xy$x, xy$y))
+    real_positions[rp_i,1] <- Truth[rrow,ccol]
+    real_positions[rp_i,2] <- xy[1]
+    real_positions[rp_i,3] <- xy[2]
+    rp_i <- rp_i +1
+  }
+}
+
+#Anchors <- matrix(data=c(0,0,0,9), nrow=2, byrow=TRUE, dimnames=list(NULL,c("D1","D2")))
+#Anchor_ix <- c(1,16,20) # Anchors are 0,15,19 with indices 1,16,20 respectively
+Anchor_ix <- Anchornodes + 1
+Anchors <- real_positions[Anchor_ix,2:3]
+
+
+
+allstats <- read.csv (DATA_FILE, header=TRUE);
+experimentSet <- unique(allstats$run) ;# experimentSet <-  800 #21,168,214,218,270,535,799,879,975
+
+mds_node_sequence<-vector("list", length(experimentSet))
+
+all_stats_rssi <- subset(allstats, select=c(run, sender, receiver, max_rssi))
+#all_stats_rssi <- subset(allstats, (sender!=as.character(refnode) & receiver!=as.character(refnode)), select=c(run, sender, receiver, max_rssi))
+#  real_sequence <- real_sequence[-1]
+
+#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=max_rssi)
+#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_mw(Pr=avg_mw, n=3))
+ all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_rss(pr=max_rssi, n=3))
+
+startTime <- proc.time()
+cat(length(experimentSet), names(all_stats_rssi_distance)[4],"\n")
+#Error matrix
+ErrorMatrix <- matrix (data=NA, nrow=max(allstats$run), ncol=3, byrow=TRUE, dimnames=list(NULL,c("expNo","maxError","sumError")))
+
+iteration <- 0
+MDSsuccess <- 0
+fail.list <- c()
+success.list <- c()
+
+for (i in experimentSet) {
+  iteration <- iteration + 1
+  cat(iteration,": ",sep="")
+  run_rssi_distance <- subset(all_stats_rssi_distance, run==i)
+
+  run_rssi_distance_c <- cast(run_rssi_distance, receiver ~ sender, fill=24, value="distance")
+   # for (r in 1:nrow(run_rssi_distance_c)) run_rssi_distance_c[r,r+1] <- 0
+  
+  run_rssi_distance_d <-as.dist(run_rssi_distance_c)
+
+   #mds_node_coordinates<- cmdscale(run_rssi_distance_d,k=2) 
+  
+  #mds_node_coordinates<- smacofSym(run_rssi_distance_d,ndim=2, type="ratio") # SMACOF MDS
+  #node_coordinates <- mds_node_coordinates$conf
+  
+  node_coordinates <- cmdscale(run_rssi_distance_d,k=2); # Classical MDS
+  
+  #p <- plot(mds_node_coordinates)
+  
+  #map.grid(c(-1,1,-1,1),nx=4, ny=5)
+#  orgGrid<-data.frame(D1=c(2,4,6,8,10,2,4,6,8,10,2,4,6,8,10,2,4,6,8,10), D2=rev(c(rep(12,5),rep(9,5), rep(6,5),rep(3,5) )))
+#  row.names(orgGrid) <- 0:19
+  #library(ggplot2); 
+#   ggplot(orgGrid, aes(x=D1, y=D2)) + geom_text(label=row.names(truthGrid),vjust=-1) + geom_point() + 
+#                                        scale_x_discrete(breaks=seq(0,11,2), limits=c(0:12)) + scale_y_discrete(breaks=seq(0,13,3), limits=c(0:13)) +
+#                                        theme_update(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), panel.background=element_rect(color="white")) + theme_bw()
+  #ggsave("originalGrid.png")
+  
+  
+
+##### APPLY PROCRUSTES ######
+  #X <- matrix(data=c(0,0,0,9,12,9), nrow=3, byrow=TRUE, dimnames=list(NULL,c("D1","D2")))
+  
+  #a <- procrustes(Anchors,mds_node_coordinates$conf[c(1,16,20),]) # match 3 anchors
+  anchor_proc <- procrustes(Anchors,matrix(node_coordinates[Anchor_ix,],ncol=2)) # match 2 anchors
+    #fitted_mds <- cmdscale(run_rssi_distance_d,k=2); anchor_proc <- procrustes(Anchors,matrix(fitted_mds[Anchor_ix,],ncol=2))  # classical MDS!!
+
+  # modify mds output accordingly!
+  fitted_mds <- node_coordinates # Smacof MDS
+  fitted_mds <- fitted_mds %*% anchor_proc$rotation # matrix multiplication
+  fitted_mds <- fitted_mds * anchor_proc$scale
+  fitted_mds[,1] <- fitted_mds[,1] + anchor_proc$translation[,1]
+  fitted_mds[,2] <- fitted_mds[,2] + anchor_proc$translation[,2]
+  colnames(fitted_mds) <- c("D1","D2")
+
+#pp1<-ggplot(as.data.frame(fitted_mds), aes(x=D1,y=D2)) + geom_point(label=rownames(fitted_mds)) + geom_text(label=rownames(fitted_mds)) + scale_y_reverse()
+#pp2<- pp1 + geom_point(data = as.data.frame(real_positions), aes(x=x,y=y), color='red') + geom_point(label=rownames(real_positions)) + geom_text(label=as.character(real_positions$node)) 
+#print(pp2)
+#####
+
+measured <- fitted_mds
+training <- real_positions
+
+
+closestPositions <- data.frame(node=rownames(node_coordinates),position=-1)
+for (rcvr in 1:nrow(fitted_mds)) 
+{
+  #Find closest distance from training_distances to rcvr
+  min_pos <- -1
+  mindist <- 10000
+  
+  for (tr in 1:nrow(real_positions))
+  {
+    if (real_positions[tr,"node"] %in% closestPositions$position)
+      next;
+    #print(real_positions[tr,"receiver"])
+    
+    eucdist <- euclideanDist(fitted_mds[rcvr,"D1"], real_positions[tr,"x"], fitted_mds[rcvr,"D2"], real_positions[tr,"y"])
+    if (eucdist <= mindist)
+    {
+      min_pos <- real_positions[tr,"node"]
+      mindist <- eucdist
+    }
+  }
+  #closestPositions[rcvr, "receiver"] <- fitted_mds[rcvr, "receiver"]
+  closestPositions[rcvr, "position"] <- min_pos
+}
+
+if (all(closestPositions$node == closestPositions$position))
+{
+  success.list <- c(success.list,i)
+  print("SUCCESS")
+} else {
+  fail.list <- c(fail.list,i)
+  print("FAIL")
+}
+
+#### HOME MADE ... it was simple and cute!
+if (FALSE){
+  r <- stretch.and.snap(mds_node_coordinates$conf, Nx=Nx, Ny=Ny, dx=dx, dy=dy)
+
+  is.success <- FALSE
+  for (f in 1:4) { # rotate max 4 times until 0 is at the corner
+    if (r[1,1] != 0)
+      r <- rotate(r)
+    else break;
+  }
+  if (all.equal(Truth,r) == TRUE || all.equal(Truth,t(r)) == TRUE ){
+      is.success <- TRUE
+      #print(r); 
+      cat("matched experiment ", i, "\n")
+      success.list <- c(success.list,i)
+  } else {
+    cat ("no match for experiment ", i, "\n")
+    fail.list <- c(fail.list,i)
+  }
+}
+  
+#print(is.success)
+
+  #cat("i=",i,all(sequence==real_sequence),"\n")
+  
+#   mds_node_sequence[[iteration]]<-sequence
+#   #if (sequence[length(sequence)]==real_sequence[[1]]) 
+#   #  mds_node_sequence[[iteration]]<-rev(sequence)
+#   if (identical(sequence,real_sequence1) || identical(sequence,real_sequence2) || identical(sequence,real_sequence3) || identical(sequence,real_sequence4))
+#   {
+#     cat("TRUE, ")
+#     MDSsuccess <- MDSsuccess +1
+#   }
+    
+}
+
+#paste(fail.list,collapse=",")
+
+cat("Total Success: ", length(success.list), "\n")
+cat("Total Fail: ", length(fail.list), "\n")
+cat("Nx=",Nx, " Ny=",Ny, " dx=",dx," dy=",dy," sd_noise_dbm=",sd_noise_dbm, "\n")
+cat("Dissimilarity metric: ", colnames(all_stats_rssi)[4], "\n")
+
+# print(MDSsuccess)
+# correct<-lapply(mds_node_sequence, identical, real_sequence)
+# length(correct[correct==TRUE])
+  
+if (FALSE){
+  binaryResults <- c()
+  for(i in 1:length(mds_node_sequence))
+  {
+  	binaryResults <- rbind(binaryResults,all(mds_node_sequence[[i]]==real_sequence))
+  	Error <- findError (as.integer(mds_node_sequence[[i]]),as.integer(real_sequence))
+    ErrorMatrix[i,] <- c(i,max(Error),sum(Error))
+    cat(paste("#RefNode:",refnode,"Success:",sum(binaryResults)), "out of ", length(binaryResults),"experiments",
+        "MeanError=", meanError,"\n")
+  }
+  
+  meanError <- sum(ErrorMatrix[,"maxError"]) / sum(ErrorMatrix[,"maxError"] > 0) 
+}
+## Print Elapsed Time
+endTime <- proc.time()
+print(endTime-startTime)
+
+
+
+#findError (as.integer(mds_node_sequence[[2000]]),as.integer(real_sequence))

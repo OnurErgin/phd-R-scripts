@@ -1,0 +1,126 @@
+## 21.11.2014
+
+source("./probSeqFunctions.R")
+
+
+myprint <- function (..., level=0, debugLevel = 1, separator=" ")
+{
+  wholestring <- list(...)
+  main_print <- paste(wholestring,sep=separator) # convert to 'cat()' printable string
+  foreprint <- paste("<",level,">",sep="")
+  if (level >= debugLevel)
+    cat(foreprint, main_print,"\n", sep=separator)
+}
+topDebugLevel <- 0
+
+
+twoBy10 <- 0:19
+#twoBy7 <- c(151, 153,12,10,149,147,89,88,144,145,93,92,139,141)
+Truth <- matrix(twoBy10,nrow=2,ncol=length(twoBy10)/2, byrow=TRUE)
+refnode <- twoBy10[1]
+
+topQuantile <- 1
+rssMaxDifference <- 0
+refnode <- 0
+
+file <- "2dSim-10x2-1.txt"
+
+packets <- read.table (file, header=TRUE)
+packets$time  <- 0
+packets$power <- 0
+head(packets)
+
+#winningReceivers <- getSendersWinningReceivers(packets,theSender=0,includeList=Truth)["receiver",]
+#max(table(winningReceivers))
+
+#maxReceiver <- mostFreqReceiver(winningReceivers,1)
+#maxReceiverProb <- findProbability(winningReceivers,maxReceiver,length(winningReceivers[!is.na(winningReceivers)]))
+
+
+nodeseq <- c()
+nextnode <- refnode
+nodeseq <-c(nodeseq, nextnode)
+
+winningReceivers <- getSendersWinningReceivers(packets,theSender=refnode,includeList=Truth)["receiver",]
+node1 <- mostFreqReceiver(winningReceivers,1)
+node2 <- mostFreqReceiver(winningReceivers,2)
+nodeseq <-c(nodeseq, node1); nodeseq <-c(nodeseq, node2) #add nodes to nodeseq
+myprint(nodeseq,level=0,debugLevel=topDebugLevel)
+
+for  (i in 1:10)
+{
+  
+  #if (length(nodeseq)==length(Truth)) break;
+
+  myprint(i,level=0,debugLevel=topDebugLevel)
+  winners <-c()
+  
+  node1WinnersList <- getSendersWinningReceivers(packets,node1,excludeList=nodeseq)["receiver",]
+  node1Winners <- c(mostFreqReceiver(node1WinnersList,1), mostFreqReceiver(node1WinnersList,2))
+  
+  node2WinnersList <- getSendersWinningReceivers(packets,node2,excludeList=nodeseq)["receiver",]
+  node2Winners <- c(mostFreqReceiver(node2WinnersList,1), mostFreqReceiver(node2WinnersList,2))
+  
+  winners <- c(node1Winners,node2Winners)
+  winners <- winners[!is.na(winners)]
+  if(length(unique(winners)) <= 1) #last node
+  {
+    if (length(unique(winners)) != 0)
+    {
+      nodeseq <- c(nodeseq,winners[1]) #add last node
+      myprint(nodeseq,level=1,debugLevel=topDebugLevel)
+    }
+    break;
+  }else
+  {
+    winnerFreq <- table(winners)
+    if (max(winnerFreq) > 1)
+    {
+      closestCornerNode <- as.numeric(names(which.max(winnerFreq)))
+    }else #ask the previous node
+    {
+      previousNode <- nodeseq[length(nodeseq)-2]
+      
+      closestCornerNodeList <- getSendersWinningReceivers(packets, previousNode, includeList=winners)["receiver",]
+      closestCornerNode <- mostFreqReceiver(closestCornerNodeList,1)
+      myprint(node1," and ",node2," asked the previous node:", previousNode, level=1, debugLevel=topDebugLevel)
+      
+    }
+    nodeseq <- c(nodeseq,closestCornerNode) #add
+    
+    oldnode <- nodeseq[length(nodeseq)-3] # at the opposite corner of last couple
+  
+    
+    #diagonalNode <- getClosestIn(oldnode, all_stats, winners[winners!=closestCornerNode], constraint, 1)
+    diagonalNodeList <- getSendersWinningReceivers(packets,oldnode,includeList=winners[winners!=closestCornerNode])["receiver",]
+    diagonalNode <- mostFreqReceiver(diagonalNodeList,1)
+    
+    
+    nodeseq <- c(nodeseq, diagonalNode) #add
+    myprint(nodeseq,level=0,debugLevel=topDebugLevel)
+    
+    
+    
+  } #last node
+  
+  node1 <- nodeseq[length(nodeseq)]
+  node2 <- nodeseq[length(nodeseq)-1]
+  
+} 
+print (matrix(as.integer(nodeseq),nrow=2, byrow=FALSE))
+resultSeq <- matrix(nodeseq,nrow=2,ncol=length(Truth)/2, dimnames=list(c(1:2),c(1:10)))
+
+Error<- matrix(rep(0,nrow(Truth)*ncol(Truth)),nrow=nrow(Truth), ncol=ncol(Truth)) # Comparison matrix
+#A<- matrix(as.character(Truth == resultSeq),nrow=nrow(Truth), ncol=ncol(Truth)) # Comparison matrix
+#A[A=="TRUE"]<-""
+#A[A=="FALSE"]<-"F"
+
+for (r in 1:nrow(Truth))
+  for(c in 1:ncol(Truth))
+  {
+    resultLoc <- which(resultSeq==Truth[r,c], arr.ind=TRUE)
+    diffRow <- abs(resultLoc[1,"row"]-r)
+    diffCol <- abs(resultLoc[1,"col"]-c)
+    Error[r,c] <- sum(diffRow, diffCol)
+  }
+

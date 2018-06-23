@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "\nsource(\"configuration.R\")\nJPFile<-paste(outputDirectory,\"JointP.txt\",sep=\"\")\nTRFile <- paste(outputDirectory,\"Trust.txt\",sep=\"\")\njointP <- read.table(JPFile,header=TRUE)\ntrusts <- read.table(TRFile,header=TRUE)\n#correlationMatrix <- matrix(data = NA, nrow = length(files)*maxRankLevel, ncol = length(JointPcolumns), byrow = TRUE, dimnames = list(NULL,JointPcolumns))\n\ncorrelations <- c()\n\nfor( i in 2:10)\n{\n  cor_i <- cor(jointP$verdict,jointP[,(3+i)], method=\"pearson\") # As point-biserial correlation\n  correlations<- c(correlations,cor_i)\n  label <- paste(\"C_P\",i,sep=\"\")\n  names(correlations)[i-1] <- label\n}\n\nP1P2diff_cor <- cor(trusts$verdict,trusts$NPdiff, method=\"pearson\")\nPdiff_corDF <- as.data.frame(P1P2diff_cor); rm(P1P2diff_cor)\n\n#titleText <- gsub(\"[A-Za-z0-9]*/\",\"\",getwd())\ntitleText <- gsub(\"/lhome/ergin/probabilisticSeq/\",\"\",getwd())\nlibrary(\"ggplot2\")\ncorrelationsDF <- as.data.frame(correlations) ;  rm(correlations)\np <- ggplot(correlationsDF, aes(x=rownames(correlationsDF),y=correlations,fill=correlations)) \np <- p + geom_bar(position=\"dodge\") +  scale_y_continuous(limits=c(-1,1),breaks=seq(-1, 1, 0.1)) #+ ylim(-1,1) #scale_y_continuous()\n#p <- p + geom_bar(aes(x=\"Pdiff\",y=Pdiff_corDF$P1P2diff_cor, color=\"P Difference\"))\n#p <- p + geom_line(x=rownames(correlationsDF),y=0.3)\np <- p + ggtitle(titleText)\nggsave (filename=\"correlations.jpg\",plot=p)\nprint(p)\n",
+    "created" : 1390991484302.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2070153795",
+    "id" : "CA12839F",
+    "lastKnownWriteTime" : 1392223390,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/probabilisticSeq/JP_correlation_bars.R",
+    "project_path" : "JP_correlation_bars.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 0,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,121 @@
+#reilability.R
+# 08.07.2015
+
+
+cols <- Nx <- 10; rows <- Ny <- 5; dx <- 3; dy <- 3; sd_noise_dbm <- -45
+
+experimentSet <- 1:100 # 3x3fails: c(8, 16, 34, 54, 59, 83, 90) # 5x5fails: c(8, 34, 41, 59, 81, 83, 90)
+
+verify2refnodes <- function() {
+  
+  expSize  <- length(experimentSet)
+  
+  Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)
+  refnodes <- c(Truth[1,1],Truth[Ny,1])
+  #refnodes <- c(Truth[1,1],Truth[2,1])
+  
+  numnodes <- length(Truth)
+  #directory <- paste("./simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m-Noise",sd_noise_dbm,"dbm/",sep="")
+  #basedirectory <- "inputs_simulation/equiDist/3x3_ideal/"; subdirectory<-""
+  basedirectory <- "./equiDist/" # For Carme
+  #basedirectory <- "/Volumes/carme_lhome/R/2d/equiDist/"
+  subdirectory <- paste("simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m-Noise",sd_noise_dbm,"dbm/",sep="")
+  #basedirectory <- paste("../measurements/simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m-Noise",sd_noise_dbm,"dbm/",sep="");  subdirectory<-"" #"../measurements/simOut-5x4-3mX3m-Noise-30dbm/";
+  directory <- paste(basedirectory,subdirectory,sep="")
+  resdirectory <- paste(directory, "results-2CornerRef/", sep="")
+  
+  totalSuccess <- 0
+  failedExpNos <- c()
+  verdicts <- data.frame(expNo=numeric(expSize), verdict=logical(expSize), reliability=character(expSize), stringsAsFactors=FALSE)
+  highReliable <- mediumReliable <- lowReliable <- c()
+  
+  overallTime <- proc.time()
+  for(expNo in experimentSet)
+  {   
+    
+  startTime <- proc.time()
+      TRACE_FILE <- paste(directory,"2dSim-",Nx,"x",Ny,"-",dx,"mX",dy,"m-",expNo,".txt",sep="")
+      cat("Loading:",TRACE_FILE, "\n")  
+      packets <- read.table(TRACE_FILE,  na.strings="", header=TRUE)
+      packets$time  <- 0
+      packets$power <- 0
+      
+      resultFile <- paste(resdirectory,"result-",Nx,"x",Ny,"-",dx,"mX",dy,"m-",expNo,".txt",sep="")
+      cat("Loading:",resultFile, "\n")  
+      result <- read.table(resultFile,  na.strings="", header=FALSE)
+      
+    if (all.equal(as.data.frame(Truth),result) == TRUE) {
+      totalSuccess <- totalSuccess + 1
+      isSuccess <- TRUE
+    } else {
+      failedExpNos <- c(failedExpNos,expNo)
+      isSuccess <- FALSE
+     # print(result)
+    }
+    cat("Result is ", isSuccess, "\t total: ",totalSuccess, "/",length(failedExpNos)+totalSuccess, "\n")
+    
+    ## Reliability
+    score <- 0
+    refNodeSet <- result[,1]
+    # First column reverse:
+    revRefNodeSet <- as.integer(getFirstColumnRefs(rev(refnodes),packets, Ny))
+    if (TRUE == all.equal(rev(refNodeSet),revRefNodeSet)) {
+      print("First column matches")
+      score <- score + 1
+    }
+    
+    if (-1 %in% result) {
+      score <- 0
+    } else { #cols <- ncolsResult ; rows <- nrowsResult
+    
+    lastColumn <- result[,cols]
+    
+    lastColumnRefnodes <- c(result[1,cols], result[rows,cols])
+    lastColumnRefnodeset <- as.integer(getFirstColumnRefs(lastColumnRefnodes, packets, Ny))
+    reverseLastColumnRefnodeset <- as.integer(getFirstColumnRefs(rev(lastColumnRefnodes), packets, Ny))
+    
+    if (TRUE == all.equal(as.integer(lastColumnRefnodeset),lastColumn) || 
+        TRUE == all.equal(as.integer(reverseLastColumnRefnodeset),rev(lastColumn)) ){
+      print("Last column matches")
+      score <- score + 1
+      
+      if (TRUE == all.equal(lastColumnRefnodeset,rev(reverseLastColumnRefnodeset)))
+        score <- score + 1
+    }
+    }
+    
+    if (score == 3)
+    {
+      highReliable <- c( highReliable , expNo)
+      cat("ExpNo:",expNo," reliability is: High!\n")
+      reliability <- "high"
+    } else if (score == 2){
+      mediumReliable <- c(mediumReliable, expNo)
+      cat("ExpNo:",expNo," reliability is: Medium!\n")
+      reliability <- "medium"
+    } else {
+      lowReliable <- c(lowReliable, expNo)
+      cat("ExpNo:",expNo," reliability is: Low!\n")
+      reliability <- "low"
+    }
+    
+    verdicts[expNo,"expNo"] <- expNo
+    verdicts[expNo,"verdict"] <- isSuccess
+    verdicts[expNo,"reliability"] <- reliability
+    print(tail(verdicts[verdicts$expNo!=0,],n=1))
+   
+    ## Print Elapsed Time
+    endTime <- proc.time()
+    print(endTime-startTime) 
+  }
+  ## Print Elapsed Time
+  overallEndTime <- proc.time()
+  print(overallEndTime - overallTime)
+  
+  write.table(verdicts,paste(resdirectory,"verdicts.txt",sep=""),col.names = TRUE, row.names = FALSE)
+  
+  return(verdicts)
+} # verify2refnodes()
+
+verdicts_2ref <- verify2refnodes()
+

@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "## Test Edge Discoveries\n\nsource(\"EdgeDiscovery.R\")\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -45\n\nexperimentSet <- 1:100 # 3x3fails: c(8, 16, 34, 54, 59, 83, 90) # 5x5fails: c(8, 34, 41, 59, 81, 83, 90)\nTruth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)\n#refnodes <- c(Truth[1,1],Truth[Ny,1])\nrefnodes <- c(Truth[1,1],Truth[2,1])\n\nnumnodes <- length(Truth)\n#directory <- paste(\"./simOut-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm/\",sep=\"\")\n#basedirectory <- \"inputs_simulation/equiDist/3x3_ideal/\"; subdirectory<-\"\"\nbasedirectory <- \"/Volumes/carme_lhome/R/2d/equiDist/\"\nsubdirectory <- paste(\"simOut-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm/\",sep=\"\")\ndirectory <- paste(basedirectory,subdirectory,sep=\"\")\n\npruneThreshold <- 2\nsource(\"probSeqFunctions-fixedPrune.R\")\n\ntopQuantile <- 1\nrssMaxDifference <- 0 \n\nrun.verbose <- FALSE\nproduceOutput <- FALSE # for probabilitySeqDF and probabilitiesDF. This file will produce output anyways\n\nexpSize <- length(experimentSet)\n\nsuccess.adjacents <- success.corners <- c()\nselectedSuccess <- 0\n\nselection_stats <- c(correct=0, total=0)\n\ni <- 0\nfor(expNo in experimentSet)\n{   \n  startTime <- proc.time()\n  i <- i + 1\n  TRACE_FILE <- paste(directory,\"2dSim-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-\",expNo,\".txt\",sep=\"\")\n  cat(\"Loading:\",TRACE_FILE, \"\\n\")  \n  packets <- read.table(TRACE_FILE,  na.strings=\"\", header=TRUE)\n  packets$time  <- 0\n  packets$power <- 0\n  \n  TrueEdge <- Truth[1,] #Truth[1,1:4]\n  \n  refNodeSet1 <- discoverEdge(c(TrueEdge[1],TrueEdge[length(TrueEdge)]), packets, length(TrueEdge))  \n  found <- all.equal(as.integer(refNodeSet1[1:length(TrueEdge)]),TrueEdge) == TRUE\n  if (found) \n    success.corners <- c(success.corners,expNo) \n  cat(\"Corners:\\t\", refNodeSet1, \" \",found, length(success.corners),\"/\",i,\"\\n\")\n  \n  \n  refNodeSet2 <- discoverEdge.adjacentRefNodes(c(TrueEdge[1],TrueEdge[2]), packets, length(TrueEdge))  \n  found <- all.equal(as.integer(refNodeSet2[1:length(TrueEdge)]),TrueEdge) == TRUE\n  if (found) \n    success.adjacents <- c(success.adjacents,expNo) \n  cat(\"Adjacents:\\t\", refNodeSet2, \" \",found, length(success.adjacents),\"/\",i,\"\\n\")\n\n  if (refNodeSet1[length(TrueEdge)] > refNodeSet2[length(TrueEdge)+1]) {\n    if (all.equal(as.integer(refNodeSet1[1:length(TrueEdge)]),TrueEdge) == TRUE)\n      selectedSuccess <- selectedSuccess + 1\n  } else {\n    if (all.equal(as.integer(refNodeSet2[1:length(TrueEdge)]),TrueEdge) == TRUE)\n      selectedSuccess <- selectedSuccess + 1\n  }\n  cat (\"selectedSucces =\", selectedSuccess,\"\\n\")\n  \n}\n\n\ncat(\"Success for CORNERS: \", length(success.corners), \"\\n\")\ncat(\"Success for ADJACENTS: \", length(success.adjacents), \"\\n\")",
+    "created" : 1432766359301.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3747745587",
+    "id" : "FE65852",
+    "lastKnownWriteTime" : 1432773806,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/EdgeDiscoveryTests.R",
+    "project_path" : "EdgeDiscoveryTests.R",
+    "properties" : {
+    },
+    "relative_order" : 20,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,15 @@
+"x"
+"1" "/Users/ergin/phd/R/measurements/2D-NothSide/withinterference/1interferer/"
+"x"
+"1" 301
+"2" 600
+"x"
+"1" "verify/4thFloorNorthSide-1interferer-Reverse-verify301-600.txt"
+"x"
+"1" 152
+"2" 13
+"3" 150
+"4" 90
+"5" 143
+"6" 94
+"7" 140

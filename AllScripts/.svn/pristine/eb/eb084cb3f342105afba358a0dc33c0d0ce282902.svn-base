@@ -1,0 +1,71 @@
+library(plyr)
+#library(ggplot2)
+source("configuration.R")
+source("commonFunctions.R")
+
+P_STAT1 <- TRUE
+P_STAT2 <- FALSE
+
+startTime <- proc.time()
+print(length(experimentSet))
+for(i in experimentSet){ 
+  TRACE_FILE <- paste(directory,"seq16ch_",i,".txt", sep="")
+  cat(TRACE_FILE,"/", length(experimentSet), "\n")
+  packets <- read.table(TRACE_FILE, sep="\t", na.strings="", col.names=c("receiver", "sender", "channel", "rssi", "power", "time", "packetnum"), colClasses=c(rep("factor",3), "numeric", "factor", "character", "numeric"), header=FALSE)
+  packets <- subset (packets, sender %in% Truth & receiver %in% Truth);
+  packets <- droplevels(packets)
+  if (P_STAT1) {
+	  p_stat1<-ddply(packets, .(sender,receiver), summarise,
+	                packets=length(rssi),
+	                max_rssi=max(rssi), count_max_rssi=sum(rssi==max(rssi)),
+	                min_rssi=min(rssi),
+	                median_rssi=median(rssi),
+	                avg_rssi=mean(rssi),
+	                avg_ch11_rssi = mean(subset(rssi,channel==11)),
+	                avg_ch18_rssi = mean(subset(rssi,channel==18)),
+  	              avg_ch26_rssi = mean(subset(rssi,channel==26)),
+# 	                d_from_mean = d_from_rss(avg_rssi),
+# 	                d_from_ch11 = d_from_rss(avg_ch11_rssi),
+# 	                d_from_ch18 = d_from_rss(avg_ch18_rssi),
+# 	                d_from_ch26 = d_from_rss(avg_ch26_rssi),
+	                avg_mw=mean(dbm2mw(rssi)),
+	                avg_ch11_mw = mean(dbm2mw(subset(rssi,channel==11))),
+	                avg_ch18_mw = mean(dbm2mw(subset(rssi,channel==18))),
+	                avg_ch26_mw = mean(dbm2mw(subset(rssi,channel==26))),
+	                sd_rssi=sd(rssi),
+	                avg_max_2=mean(subset(rssi, rssi>=quantile(rssi, 0.98))),
+	                avg_max_5=mean(subset(rssi, rssi>=quantile(rssi, 0.95))),
+	                avg_max_10=mean(subset(rssi, rssi>=quantile(rssi, 0.90)))
+	                )
+	  p_stat1$run<-i
+	  
+	  write.table(p_stat1, file="distance_vector_stats_all_channels_4thFl-North-Window-mw.csv.txt", sep=",", append=TRUE, col.names=(i==1), row.names=FALSE)
+	  rm(p_stat1)
+  }
+  	
+ if (P_STAT2) {
+	  p_stat2<-ddply(packets, .(sender,receiver,channel), summarise,
+	                packets=length(rssi),
+	                max_rssi=max(rssi), count_max_rssi=sum(rssi==max(rssi)),
+	                min_rssi=min(rssi),
+	                median_rssi=median(rssi),
+	                avg_rssi=mean(rssi),
+	                sd_rssi=sd(rssi),
+	                avg_max_2=mean(subset(rssi, rssi>=quantile(rssi, 0.98))),
+	                avg_max_5=mean(subset(rssi, rssi>=quantile(rssi, 0.95))),
+	                avg_max_10=mean(subset(rssi, rssi>=quantile(rssi, 0.90)))
+	                )
+	  p_stat2$run<-i
+	  write.table(p_stat2, file="distance_vector_stats_per_channel_4thFl.csv.txt", sep=",", append=TRUE, col.names=(i==1), row.names=FALSE)
+	  rm(p_stat2)
+  }
+ 
+  rm(packets)
+  gc(reset=TRUE)
+  
+}
+
+## Print Elapsed Time
+endTime <- proc.time()
+print(endTime-startTime)
+  

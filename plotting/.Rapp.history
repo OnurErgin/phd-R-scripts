@@ -1,0 +1,324 @@
+getwd()
+source("packet_stat.r")
+source("configuration.R")#
+#
+library("plyr")#
+library("reshape")#
+library("ggplot2")#
+library(scales)#
+#
+colm2Seq <- function(colNo,verdict=TRUE) {#
+  if (colNo ==12) #
+    paste(seq(1,10), collapse="-") #
+  else #
+    paste(seq(colNo-3,colNo-1), collapse="-")#
+}#
+titleGenerate <- function(suc) {#
+  paste(experimentName,#
+        "Histogram of\n",#
+        "Experiment with",suc*100,"% success\n",#
+        "Differences in Partial probabilities for\n", #
+        "Subsequence", colm2Seq(colm))#
+}#
+#
+outputDirectory <- "./"#
+experimentName <- c("3rdFloor","1stRow","Reverse","NoCluster")#
+PrFile <- paste(outputDirectory,"PsOfBestSeqs-cluster5.txt",sep="")#
+Prs <- read.table(PrFile,header=TRUE)#
+#
+success <- sum(Prs[Prs$verdict==1&Prs$rank==1,"verdict"])/length(unique(Prs$expNo))#
+#
+shortPcolumnnames <- c()#
+for (i in 1:(numnodes-2))#
+{#
+  shortPcolumnnames <- c(shortPcolumnnames,paste(i,"-",i+2,sep=""))#
+}#
+#
+Prcolumns <- c("expNo","verdict","rank",shortPcolumnnames,"1-10")#
+TriplePrs <- matrix(data = NA, nrow = nrow(Prs), ncol = length(Prcolumns), byrow = TRUE, dimnames = list(NULL,Prcolumns))#
+#
+for (r in 1:nrow(Prs))#
+{#
+  TriplePrs[r,1:3] <- as.numeric(Prs[r,1:3])#
+  for (p in 1:(numnodes-2))#
+  {#
+    TriplePrs[r,3+p] <- prod(Prs[r,(3+p+1):(3+p+2)])#
+  }#
+  TriplePrs[r,"1-10"] <- prod(Prs[r,-c(1:3)])#
+}#
+#
+# Compute differences in partial Pribabilities#
+DiffPrcolumns <- c("expNo","verdict","rank",shortPcolumnnames,"1-10")#
+DiffPrs <- matrix(data = NA, nrow = nrow(TriplePrs)/2, ncol = length(DiffPrcolumns), byrow = TRUE, dimnames = list(NULL,DiffPrcolumns))#
+for (r in seq(1,nrow(TriplePrs),2))#
+{#
+  if (TriplePrs[r,"expNo"] != TriplePrs[r+1,"expNo"])#
+  {#
+    stop("Different expNo at row",r,"and",r+1)#
+  }#
+  r1 <- TriplePrs[r,]#
+  r2 <- TriplePrs[r+1,]#
+  DiffPrs[(r+1)/2,1] <- r1[1]#
+  DiffPrs[(r+1)/2,-1] <- (r1-r2)[-1]#
+}#
+#
+if (FALSE) #plot position Probabilities#
+{#
+  goodOnes <- subset(as.data.frame(TriplePrs),verdict == 0 & rank == 1)#
+  plotFileName <- c("Failed","Experiments","No","Clustering")#
+  meltedGoodOnes <- melt(goodOnes[,-c(1:3)])#
+  names(meltedGoodOnes)[1] <- "PositionWindow"#
+  ggp <- ggplot(meltedGoodOnes, aes(x=value,fill=PositionWindow)) #
+  ggp <- ggp + facet_wrap(~PositionProbability)#,scales="free_x")#
+  ggp <- ggp + geom_histogram() + ggtitle (paste("Histogram of Partial probabilities for\n", paste(plotFileName,collapse=" ")) )#
+  print(ggp)#
+  #ggsave (filename=paste(paste(plotFileName,collapse=""),".pdf",sep=""),plot=ggp)#
+}#
+#
+if (FALSE) # All subseqs in one, 3-page histograms#
+{#
+  #experimentName <- c("4thFloor","1stRow","Rev")#
+  experimentName <- paste(experimentName,collapse="")#
+  plotTypes <- c("-a"=1,"-b"=-1)#,"-c"=0)#
+  plotFileName <- c("Probability","Differences","In","Position", "Windows",paste(success*100,sep=""))#
+  filename=paste(paste(plotFileName,collapse=""))#
+  #pdf(file=paste(filename,"-",experimentName,".pdf",sep=""))#
+  for (i in 1:length(plotTypes)) #plot differences in position probabilities#
+  {#
+    #Plot differences#
+    goodOnes <- as.data.frame(DiffPrs)#
+    goodOnes <- subset(as.data.frame(DiffPrs),verdict == plotTypes[[i]])#
+    plotTitle <- c(plotFileName,names(plotTypes[i]))#
+    meltedGoodOnes <- melt(goodOnes[,-c(1:3)])#
+    names(meltedGoodOnes)[1] <- "PositionWindow"#
+    ggp <- ggplot(meltedGoodOnes, aes(x=value,fill=PositionWindow)) #
+    ggp <- ggp + facet_wrap(~PositionWindow)#,scales="free_x")#
+    ggp <- ggp + geom_histogram() + ggtitle (paste(experimentName,"\nHistogram of Partial probabilities for\n", paste(plotTitle,collapse=" ")) )#
+    print(ggp)#
+    ggsave (filename=paste(paste(plotFileName,collapse=""),".pdf",sep=""),plot=ggp)#
+  }#
+  #dev.off()#
+}#
+#
+experimentName <- paste(experimentName,collapse="")#
+plotTypes <- c("-a"=1,"-b"=-1)#,"-c"=0)#
+plotFileName <- c("Probability","Differences","In","Position", "Windows",paste(success*100,sep=""))#
+filename=paste(paste(plotFileName,collapse=""))#
+#
+colmStart <- 11 #start of subsequences#
+goodOnes <- subset(as.data.frame(DiffPrs),verdict == plotTypes[[1]])#
+badOnes <- subset(as.data.frame(DiffPrs),verdict == plotTypes[[2]])#
+badOnes <- badOnes[badOnes[,1]<=330,]#
+plots<-list()#
+filename=paste(paste(plotFileName,collapse=""))#
+  #pdf(file=paste(filename,"-",experimentName,".pdf",sep=""))#
+  for (colm in colmStart)#
+  {#
+    side.by.side <- data.frame(Type=character(0),ProbDiff=numeric(0),stringsAsFactors=FALSE)#
+    for (r in 1:nrow(goodOnes))#
+      side.by.side <- rbind(side.by.side,data.frame(Type="Correct Verdict: 8-9-10",ProbDiff=goodOnes[r,colm],stringsAsFactors=FALSE))#
+    for (r in 1:nrow(badOnes))#
+      side.by.side <- rbind(side.by.side,data.frame(Type="Wrong Verdict: 8-10-9",ProbDiff=badOnes[r,colm],stringsAsFactors=FALSE))#
+    ggp <- ggplot(side.by.side, aes(x=ProbDiff,fill=Type)) #
+    ggp <- ggp + facet_wrap(~Type,nrow=2,ncol=1)#,scales="free_x")#
+    ggp <- ggp + theme(legend.position="none")#
+    ggp <- ggp + geom_histogram() + ggtitle (titleGenerate(success) )#
+    #ggp <- ggp + scale_x_continuous(breaks = round(seq(min(side.by.side$ProbDiff), max(side.by.side$ProbDiff), by=0.5),1))#
+    ggp <- ggp + scale_x_continuous(breaks=pretty_breaks(10), name="Difference in Probability")#
+    ggp <- ggp + scale_y_continuous(name="Number of Experiments")#
+    print(ggp)#
+    #plots[[i-3]] <- ggp#
+    #do.call("grid.arrange", ggp)#
+  }#
+  #dev.off()#
+#
+#ml <- do.call(marrangeGrob, c(plots, list(nrow = 1, ncol = 10)));#
+#print(ml)
+getwd()
+setwd("../plotting/")
+setwd("../probabilisticSeq/")
+source("TriplePhistograms-AllSubSeqInOne.R")
+source("TriplePhistograms.R")
+?factor
+getwd()
+setwd("../plotting/")
+source("failIndices.R")
+log10(100)
+20*log10(100)
+rss_path_loss <- function(d, pt=0, fc=2.405e9, n=2, d0=1) {#
+  lamda <- 2.998e8/fc;#
+  pl <- -20*log10(lamda/(4*pi*d0)) + 10*n*log10(d/d0);#
+  pt-pl#
+}#
+#
+d_path_loss <- function(pr, pt=0, fc=2.405e9, n=2, d0=1) {#
+  lamda <- 2.998e8/fc;#
+  pl0 <- -20*log10(lamda/(4*pi*d0));#
+  d0*10^((pt-pr-pl0)/(10*n))#
+}#
+#
+d_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {#
+  lamda <- 2.998e8/fc;#
+  pl = pt-pr#
+  d <- d0 * 10^((pl + 20*log10(lamda/(4*pi*d0))) / (10*n));#
+  return(d)#
+}#
+#
+mw2dbm <- function (milliW) { dBm <- 10*log10((milliW)); return(dBm) }#
+dbm2mw <- function (dBm)   { milliW <- 10^(dBm/10); return(milliW) }
+dbm2mw(0)
+dbm2mw(-45)
+d_from_rss(-45)
+d_from_rss(dbm2mw(-45),pt=1)
+d_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {#
+  lamda <- 2.998e8/fc;#
+  pl = pt/pr#
+  d <- d0 * 10^((pl * 20*log10(lamda/(4*pi*d0))) / (10*n));#
+  return(d)#
+}
+d_from_rss(dbm2mw(-45),pt=1)
+pl
+lamda <- 2.998e8/fc;
+1/dbm2mw(-45)
+pl=1/dbm2mw(-45)
+fc=2.405e9
+n=3
+d0=1
+lamda <- 2.998e8/fc
+d <- d0 * 10^((pl * 20*log10(lamda/(4*pi*d0))) / (10*n));
+d
+10^((pl * 20*log10(lamda/(4*pi*d0))) / (10*n));
+pl * 20*log10(lamda/(4*pi*d0)))
+pl * 20*log10(lamda/(4*pi*d0))
+d_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {#
+  lamda <- 2.998e8/fc;#
+  pl = pt-pr#
+  d <- d0 * 10^((pl + 20*log10(lamda/(4*pi*d0))) / (10*n));#
+  return(d)#
+}
+d_from_rss(-45,0)
+source("/var/folders/7h/_89mt4cn55z2jgvl17vf_5v00000gn/T//RtmpSwjctX/file27f445b0a06e")#
+unlink("/var/folders/7h/_89mt4cn55z2jgvl17vf_5v00000gn/T//RtmpSwjctX/file27f445b0a06e")
+bp <- boxplot(RSS ~ Distance, randData, ylab="RSSI", xlab="Node Distance"); title(mainTitle)
+abline(h=-97); text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+bp <- boxplot(RSS ~ Distance, randData, ylab="RSSI", xlab="Node Distance"); title(mainTitle)
+abline(h=-97); text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+bp
+text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+abline(h=-97); text(bp,c(20,20), labels="AAAA")
+text(bp,c(20,20), labels="AAAA")
+text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+source("/var/folders/7h/_89mt4cn55z2jgvl17vf_5v00000gn/T//RtmpSwjctX/file27f46eabb75d")#
+unlink("/var/folders/7h/_89mt4cn55z2jgvl17vf_5v00000gn/T//RtmpSwjctX/file27f46eabb75d")
+source("/var/folders/7h/_89mt4cn55z2jgvl17vf_5v00000gn/T//RtmpSwjctX/file27f44b93736e")#
+unlink("/var/folders/7h/_89mt4cn55z2jgvl17vf_5v00000gn/T//RtmpSwjctX/file27f44b93736e")
+abline(h=-97); text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+plot(randData$Distance,randData$RSS,pch=20, ylab="RSSI", xlab="Node Distance"); title(mainTitle)
+plot(rep(test_distances,each=shots),C,pch=20, ylab="RSSI", xlab="Node Distance"); title("Produced values with Rayleigh")
+abline(h=-97); text(c(3,-97), labels="Sensitivity Treshold", pos=3)
+abline(h=-97); text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+bp <- boxplot(RSS ~ Distance, randData, ylab="RSSI", xlab="Node Distance"); title(mainTitle)
+abline(h=-97); text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+bp <- boxplot(RSS ~ Distance, randData, ylab="RSSI", xlab="Node Distance"); title(mainTitle)
+abline(h=-97); text(bp,c(3,-97), labels="Sensitivity Treshold", pos=3)
+?text
+abline(h=-97); text(c(3,-97), labels="Sensitivity Treshold", pos=3)
+floor(4/3)
+floor(6/3)
+floor(5/3)
+floor(7/3)
+c <- 2.998e8 #speed of light (m/s)
+data <- c(LeftToRight=100,RightToLeft=100)
+A<-matrix(data,nrow=1,ncol=2,dimnames=list(NULL,names(data)), byrow=TRUE)
+bp<-barplot(A,col=c("orange"),main=mainTitle,ylab="Success (%)")
+barplot(A,col=c("orange"),main=mainTitle,ylab="Success (%)")
+barplot(A,col=c("orange"),main="mainTitle",ylab="Success (%)")
+data <- c(LeftToRight=100,RightToLeft=50)
+A<-matrix(data,nrow=1,ncol=2,dimnames=list(NULL,names(data)), byrow=TRUE)
+barplot(A,col=c("orange"),main="mainTitle",ylab="Success (%)")
+A
+174 blue m&ms, 224 red, 230 yellow, 215 orange, 195 green, and 216 brown m&ms
+data <- c(rep("blue",174),rep("red",224),rep("yellow",230),rep("orange",215),rep("green",195),rep("brown",216))
+date
+data
+summary(data)
+summarize(data)
+table(data)
+barplot(data)
+barplot(table(data))
+barplot(table(data)/sum(table))
+t <- table(data)
+barplot(t/sum(t))
+barplot(t/sum(t), col=colnames(t))
+t
+colnames(t)
+names(t)
+barplot(t/sum(t), col=names(t))
+history
+history()
+data <- c(rep("blue",174),rep("red",224),rep("yellow",230),rep("orange",215),rep("green",195),rep("brown",216))
+t <- table(data)
+barplot(t/sum(t), col=names(t))
+barplot(t/sum(t), col=names(t))
+library(ggplot)
+library(ggplot2)
+ggplot(data)
+df <- data.frame(mnm=data)
+df
+ggplot(df, aes(x=mnm)) + geom_boxplot()
+ggplot(df, aes(y=mnm)) + geom_boxplot()
+ggplot(df, aes(y=mnm)) + geom_histogram()
+ggplot(df, aes(x=mnm)) + geom_histogram()
+ggplot(df, aes(x=mnm)) + geom_boxplot()
+ggplot(df, aes(x=mnm)) + geom_bar()
+ggplot(df, aes(x=mnm)) + stat_boxplot()
+ggplot(df, aes(x=mnm)) + geom_bar()
+ggplot(df, aes(x=mnm, color=unique(x))) + geom_bar()
+ggplot(df, aes(x=mnm, color=unique(mnm))) + geom_bar()
+ggplot(df, aes(x=mnm, fill=unique(mnm))) + geom_bar()
+ggplot(df, aes(x=mnm, fill=mnmx)) + geom_bar()
+ggplot(df, aes(x=mnm, fill=x)) + geom_bar()
+unique(df$mnm)
+ggplot(df, aes(x=mnm, group=x)) + geom_bar()
+ggplot(df, aes(x=mnm), group=x) + geom_bar()
+ggplot(df, aes(x=mnm), fill=x) + geom_bar()
+ggplot(df, aes(x=mnm), fill=mnm) + geom_bar()
+ggplot(df, aes(x=mnm)) + geom_bar(fill=mnm)
+ggplot(df, aes(x=mnm)) + geom_bar(fill=df$mnm)
+ggplot(df, aes(x=mnm)) + geom_bar(fill=x)
+ggplot(df, aes(x=mnm)) + geom_bar(aes(fill=x))
+ggplot(df, aes(x=mnm)) + geom_bar(aes(fill=mnm))
+ggplot(df, aes(x=mnm)) + geom_bar(aes(fill=mnm))
+ggplot(df, aes(x=mnm)) + geom_bar(aes(fill=mnm), stat="boxplot")
+ggplot(df, aes(x=mnm)) + geom_bar(aes(fill=mnm), stat="identity")
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(fill=mnm))
+ggplot(df, aes(x=mnm)) + geom_boxplot(aes(fill=mnm))
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(fill=mnm))
+ggplot(df, aes(x=mnm/__count__)) + geom_histogram(aes(fill=mnm))
+ggplot(df, aes(x=mnm/nrow(df))) + geom_histogram(aes(fill=mnm))
+nrow(df)
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm))
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm)) + scale_fill_manual(values=unique(mnm))
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm)) + scale_fill_manual(values=unique(df$mnm))
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm)) + scale_fill_manual(values=as.character(unique(df$mnm)))
+ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm)) + scale_fill_manual(values=sort(as.character(unique(df$mnm))))
+data <- c(rep("blue",174),rep("red",224),rep("yellow",230),rep("orange",215),rep("green",195),rep("brown",216))#
+    df <- data.frame(mnm=data)#
+    ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm)) + scale_fill_manual(values=sort(as.character(unique(df$mnm))))
+data <- c(rep("blue",174),rep("red",224),rep("yellow",230),rep("orange",215),rep("green",195),rep("brown",216))#
+    df <- data.frame(mnm=data)#
+    ggplot(df, aes(x=mnm)) + geom_histogram(aes(y=(..count..)/sum(..count..),fill=mnm)) + scale_fill_manual(name="M&M", values=sort(as.character(unique(df$mnm)))) + ylab("Relative Frequency")
+data.frame(mnm=c(blue=174, red=224))
+df2 <- data.frame(mnm=c(blue=174, red=224, yellow=230,orange=215,green=195,brown=216))
+df2
+ggplot(df2, aes=(y=mnm)) + geom_histogram(aes(fill))
+ggplot(df2, aes=(y=mnm)) + geom_histogram(aes(fill=mnm))
+ggplot(df2, aes=(y=mnm)) + geom_histogram(aes(fill=mnm), stat="identity")
+ggplot(df2, aes(y=mnm)) + geom_histogram(aes(fill=mnm), stat="identity")
+ggplot(df2, aes(x=mnm)) + geom_histogram(aes(fill=mnm), stat="identity")
+ggplot(df2, aes(y=mnm)) + geom_histogram(aes(fill=mnm), stat="identity")
+ggplot(df2, aes(y=mnm)) + geom_histogram( stat="identity")
+data.frame(outcome = as.factor(c("Good", "Bad")), n = c(700, 300), freq = c(70, 30))

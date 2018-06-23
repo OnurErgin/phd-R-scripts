@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "library(plyr)\nlibrary(reshape)\nlibrary(MASS)\n\nsource(\"configuration.R\")\nsource(\"commonFunctions.R\")\n\n  DATA_FILE <- \"./inputs/distance_vector_stats_all_channels_4thFl-South-Aisle-nPacket.csv.txt\"\n#Truth <- 10:1; refnode <-10\nallstats <- read.csv (DATA_FILE, header=TRUE);\nexperimentSet <- unique(allstats$run)\n\nreal_sequence<-as.character(Truth)\n\ndv_type <- \"avg_rssi\"\n\nmds_node_sequence<-vector(\"list\", length(experimentSet))\n\n#all_stats_rssi <- subset(allstats, select=c(run, sender, receiver, avg_rssi))\nall_stats_rssi <- subset(allstats, (sender!=as.character(refnode) & receiver!=as.character(refnode)), select=c(run, sender, receiver, avg_rssi))\n  real_sequence <- real_sequence[-1]\n\n#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=avg_rssi)\n#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_mw(Pr=avg_mw, n=3))\n all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_rss(pr=avg_rssi, n=3))\n\nstartTime <- proc.time()\nprint(length(experimentSet))\n\niteration <- 0\nfor (i in experimentSet) {\n  iteration <- iteration + 1\n  run_rssi_distance <- subset(all_stats_rssi_distance, run==i)\n\n  run_rssi_distance_c <- cast(run_rssi_distance, receiver ~ sender, fill=24, value=\"distance\")\n\n  run_rssi_distance_d <-as.dist(run_rssi_distance_c)\n\n   mds_node_coordinates<- cmdscale(run_rssi_distance_d,k=1)\n\n  sequence<-names(sort(mds_node_coordinates[,1]))\n  \n  #cat(\"i=\",i,all(sequence==real_sequence),\"\\n\")\n  \n  mds_node_sequence[[iteration]]<-sequence\n  if (sequence[length(sequence)]==real_sequence[[1]]) \n    mds_node_sequence[[iteration]]<-rev(sequence)\n}\n\ncorrect<-lapply(mds_node_sequence, identical, real_sequence)\nlength(correct[correct==TRUE])\n  \nbinaryResults <- c()\nfor(i in 1:length(mds_node_sequence))\n{\n\tbinaryResults <- rbind(binaryResults,all(mds_node_sequence[[i]]==real_sequence))\n}\n\n## Print Elapsed Time\nendTime <- proc.time()\nprint(endTime-startTime)\n\ncat(paste(\"RefNode:\",refnode,\"Success:\",sum(binaryResults)), \"out of \", length(binaryResults),\"experiments\\n\")\n\n",
+    "created" : 1406627468480.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "57941726",
+    "id" : "81FE0609",
+    "lastKnownWriteTime" : 1406672735,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/AllScripts/mds_nlr.r",
+    "project_path" : "mds_nlr.r",
+    "properties" : {
+    },
+    "relative_order" : 0,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

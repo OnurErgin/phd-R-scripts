@@ -1,0 +1,135 @@
+## 
+# Takes ddply'd stats as input and Greedy Sorts nodes into a sequence.
+
+library(plyr)
+source("configuration.R")
+source("commonFunctions.R")
+
+
+closestNodeByDistance <- function(senderNode, currentSeq, lookinSet, constraint="d_from_mean") {
+  lookinSet <- subset (lookinSet, sender==senderNode & !(receiver %in% currentSeq)) # lookinSet except currentSeq
+  orderedSet <- lookinSet[order(lookinSet[,constraint]),] # ordered by constraint, ascending
+  return(as.numeric(as.character(orderedSet[1,"receiver"])))
+}
+
+closestNodeByRss <- function(senderNode, currentSeq, lookinSet, constraint="avg_rssi") {
+  lookinSet <- subset (lookinSet, sender==senderNode & !(receiver %in% currentSeq)) # lookinSet except currentSeq
+  orderedSet <- lookinSet[order(-lookinSet[,constraint]),] # ordered by constraint, descending
+  return(as.numeric(as.character(orderedSet[1,"receiver"])))
+}
+
+greedySortNodes <- function (refNode, Set, constraint = "d_from_mean", useRSS = TRUE) {
+  #cat("constraint:",constraint," ");
+  resultSeq <- c(refNode)
+  while (length(resultSeq) != length(unique(Set$sender))) {
+    if (useRSS)
+      nextNode <- closestNodeByRss (resultSeq[length(resultSeq)],resultSeq, Set, constraint)
+    else
+      nextNode <- closestNodeByDistance (resultSeq[length(resultSeq)],resultSeq, Set, constraint)
+    resultSeq <- c(resultSeq,nextNode)
+  }
+  return(resultSeq)
+}
+
+allSequences_fromCh11 = matrix(data = NA, nrow = 1, ncol = length(Truth), byrow = TRUE, dimnames = NULL)
+allSequences_fromCh18 = matrix(data = NA, nrow = 1, ncol = length(Truth), byrow = TRUE, dimnames = NULL)
+allSequences_fromCh26 = matrix(data = NA, nrow = 1, ncol = length(Truth), byrow = TRUE, dimnames = NULL)
+allSequences_fromMean = matrix(data = NA, nrow = 1, ncol = length(Truth), byrow = TRUE, dimnames = NULL)
+
+successCh11 <- 0
+successCh18 <- 0
+successCh26 <- 0
+successMean <- 0
+
+startTime <- proc.time()
+
+allstats <- read.csv ("./inputs/distance_vector_stats_all_channels_4thFl-South-Window-nPacket.csv.txt", header=TRUE);
+#Truth <- 10:1; refnode=10; 
+experimentSet <- unique(allstats$run)
+
+for(expNo in experimentSet)
+{
+  cat("expNo:",expNo,"\n") 
+  
+  stats <- subset (allstats, run==expNo & sender %in% Truth & receiver %in% Truth)
+  
+  #Ch11
+  {
+    theSequenceCh11 <- greedySortNodes(refnode, stats, constraint="avg_ch11_rssi_8packet", useRSS=TRUE);
+    allSequences_fromCh11 <- rbind(allSequences_fromCh11,theSequenceCh11)
+    
+    verdict11 <- all(theSequenceCh11 == Truth)
+    if (verdict11 == TRUE){
+      successCh11 <- successCh11 + 1
+    }
+  }
+
+  #Ch18
+  {
+    theSequenceCh18 <- greedySortNodes(refnode, stats, constraint="avg_ch18_rssi_8packet", useRSS=TRUE);
+    allSequences_fromCh18 <- rbind(allSequences_fromCh18,theSequenceCh18)
+    
+    verdict18 <- all(theSequenceCh18 == Truth)
+    if (verdict18 == TRUE){
+      successCh18 <- successCh18 + 1
+    }
+  }
+
+  #Ch26
+  {
+    theSequenceCh26 <- greedySortNodes(refnode, stats, constraint="avg_ch26_rssi_8packet", useRSS=TRUE);
+    allSequences_fromCh26 <- rbind(allSequences_fromCh26,theSequenceCh26)
+    
+    verdict26 <- all(theSequenceCh26 == Truth)
+    if (verdict26 == TRUE){
+      successCh26 <- successCh26 + 1
+    }
+  }
+  
+  #Mean
+  {
+    theSequenceMean <- greedySortNodes(refnode, stats, constraint="avg_rssi_8packet", useRSS=TRUE);
+    allSequences_fromMean <- rbind(allSequences_fromMean,theSequenceMean)
+    
+    verdictMean <- all(theSequenceMean == Truth)
+    if (verdictMean == TRUE){
+      successMean <- successMean + 1
+    }
+  }
+  cat("successCh11:",successCh11,"\t"); cat("successCh18:",successCh18,"\t");
+  cat("successCh26:",successCh26,"\t"); cat("successMean:",successMean,"\n")
+}
+
+## Print Elapsed Time
+endTime <- proc.time()
+print(endTime-startTime)
+
+if (FALSE)
+{
+  allSequences_fromCh11 <- allSequences_fromCh11[2:nrow(allSequences_fromCh11),]
+  saveToFile(allSequences_fromCh11,filePrefix="allSequences_d_fromCh11");
+  
+  allSequences_fromCh18 <- allSequences_fromCh18[2:nrow(allSequences_fromCh18),]
+  saveToFile(allSequences_fromCh18,filePrefix="allSequences_d_fromCh18");
+  
+  allSequences_fromCh26 <- allSequences_fromCh26[2:nrow(allSequences_fromCh26),]
+  saveToFile(allSequences_fromCh26,filePrefix="allSequences_d_fromCh26");
+  
+  allSequences_fromMean <- allSequences_fromMean[2:nrow(allSequences_fromMean),]
+  saveToFile(allSequences_fromMean,filePrefix="allSequences_d_fromMean");
+}
+
+if (FALSE) {
+            TRACE_FILE <- paste(directory,inFilePrefix,expNo,inFileSuffix, sep="")
+            
+            cat("Loading:",TRACE_FILE,"\n")  
+            packets <- read.table(TRACE_FILE, sep="\t", na.strings="", col.names=c("receiver", "sender", "channel", "rssi", "power", "time", "packetnum"), 
+                                  colClasses=c(rep("factor",3), "numeric", "factor", "character", "numeric"), header=FALSE)
+            
+            stats <- ddply (packets,.(sender,receiver), summarise, 
+                            mean_rssi = mean(rssi), 
+                            mean_ch26_rssi = mean(subset(rssi,channel==26)),
+                            d_from_mean = d_from_rss(mean_rssi),
+                            d_from_ch26 = d_from_rss(mean_ch26_rssi)
+                            )
+}

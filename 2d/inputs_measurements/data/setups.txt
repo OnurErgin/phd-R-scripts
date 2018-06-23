@@ -1,0 +1,17 @@
+first experiment is 2 meter distance on x axis and 1 meter distance on y axis with 4 nodes on x axis and 3 nodes on y axis (total 3x4=12 nodes)
+second experiment is 2 meter distance on x axis and 2 meter distance on y axis with 4 nodes on x axis and 3 nodes on y axis (total 3x4=12 nodes)
+
+
+The Setup is as follows.
+Brackets is Sink node  '%' is the door of the room
+
+   x axis
+ /-----------------
+y|(15) 20  7   2  %
+a|13   8   6   11
+x|14   9   5   17
+i|
+s|
+
+
+

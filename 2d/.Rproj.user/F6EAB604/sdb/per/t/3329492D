@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "\"refnode\" \"noise\" \"topology\" \"algorithm\" \"success\" \"note\"\n2 -45 \"5x5-3mx3m\" \"MDS-MAP\" 1 \"\"\n2 -45 \"10x5-3mx3m\" \"MDS-MAP\" 0.99 \"\"\n2 -30 \"10x5-3mx3m\" \"MDS-MAP\" 0 \"\"",
+    "created" : 1435025076680.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "256853364",
+    "id" : "3329492D",
+    "lastKnownWriteTime" : 1435076177,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/MDS_FP.DF",
+    "project_path" : "MDS_FP.DF",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 26,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "text"
+}

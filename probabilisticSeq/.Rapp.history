@@ -1,0 +1,31 @@
+source("/Users/ergin/phd/R/probabilisticSeq/countVerify.R")
+head(analyse)
+head(analyse,15)
+source("/Users/ergin/phd/R/probabilisticSeq/countVerify.R")
+experiments
+source("/Users/ergin/phd/R/probabilisticSeq/countVerify.R")
+summarise(analyse)
+summarize(analyse)
+summary(analyse)
+head(analyse,15)
+head(analyse,16)
+source("/Users/ergin/phd/R/probabilisticSeq/countVerify.R")
+exor
+xor(1,1)
+xor(TRUE,TRUE)
+xor(TRUE,FALSE)
+xor(FALSE,TRUE)
+xor(FALSE,FALSE)
+FALSE & FALSE
+FALSE & FALSE & TRUE
+FALSE=FALSE
+FALSE==FALSE
+FALSE==FALSE & FALSE==FALSE & TRUE
+FALSE==FALSE & FALSE==FALSE & TRUE==FALSE
+FALSE==FALSE & FALSE==FALSE & TRUE==TRUE
+source("/Users/ergin/phd/R/probabilisticSeq/countVerify.R")
+nrow(match)
+nrow(matches)
+matches <- subset(analyse, match == TRUE)
+nrow(matches)
+head(matches)

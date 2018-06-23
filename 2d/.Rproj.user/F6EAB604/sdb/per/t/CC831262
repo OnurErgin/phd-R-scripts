@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "cols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.5; rssMaxDifference <- 3\nsuccess <- 97/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.5; rssMaxDifference <- 2\nsuccess <- 90/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.5; rssMaxDifference <- 4\nsuccess <- 93/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.5; rssMaxDifference <- 5\nsuccess <- 88/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.5; rssMaxDifference <- 1\nsuccess <- 83/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.5; rssMaxDifference <- 0\nsuccess <- 65/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 1; rssMaxDifference <- 3\nsuccess <- 60/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.95; rssMaxDifference <- 3\nsuccess <- 73/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.90; rssMaxDifference <- 3\nsuccess <- 84/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.8; rssMaxDifference <- 3\nsuccess <- 93/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.70; rssMaxDifference <- 3\nsuccess <- 95/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.6; rssMaxDifference <- 3\nsuccess <- 95/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.4; rssMaxDifference <- 3\nsuccess <- 97/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.3; rssMaxDifference <- 3\nsuccess <- 95/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.2; rssMaxDifference <- 3\nsuccess <- 97/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.1; rssMaxDifference <- 3\nsuccess <- 93/100\n\ncols <- Nx <- 5; rows <- Ny <- 4; dx <- 3; dy <- 3; sd_noise_dbm <- -30\ntopQuantile <- 0.0; rssMaxDifference <- 3\nsuccess <- 90/100",
+    "created" : 1432971472405.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2042545347",
+    "id" : "CC831262",
+    "lastKnownWriteTime" : 1433026018,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/all_Results_equiDist.DF.R",
+    "project_path" : "all_Results_equiDist.DF.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 23,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

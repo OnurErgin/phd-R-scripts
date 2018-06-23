@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "cols <- Nx <- 10; rows <- Ny <- 5; dx <- 3; dy <- 3; sd_noise_dbm <- -45\ntitleTxt <- \"\"\nTruth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)\nrefnodes <- c(Truth[1,1],Truth[Ny,1])\n#directory <- paste(\"./simOut-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm/\",sep=\"\")\n#basedirectory <- \"inputs_simulation/equiDist/3x3_ideal/\"; subdirectory<-\"\"\n#basedirectory <- \"./equiDist/\" # For Carme\nbasedirectory <- \"/Volumes/carme_lhome/R/2d/equiDist/\"\nsubdirectory <- paste(\"simOut-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm/\",sep=\"\")\n#basedirectory <- paste(\"../measurements/simOut-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm/\",sep=\"\");  subdirectory<-\"\" #\"../measurements/simOut-5x4-3mX3m-Noise-30dbm/\";\ndirectory <- paste(basedirectory,subdirectory,sep=\"\")\n\n\nverifyfile <- paste(basedirectory,\"verdict-\",length(refnodes),\"refs-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm.txt\",sep=\"\")\nverifyDF <- read.table(verifyfile, header = TRUE)\nverifyDF$reliability <- factor(verifyDF$reliability, levels=c(\"high\",\"medium\", \"low\"))\n\nprint(verifyfile)\ncat(\"Total Success:\", sum(verifyDF$verdict),\"\\n\")\ncat(\"High Reliable Success:\", sum(subset(verifyDF, reliability==\"high\")$verdict), \n                  \", Fail: \",sum(subset(verifyDF, reliability==\"high\")$verdict == FALSE), \"\\n\")\ncat(\"Medium Reliable Success:\", sum(subset(verifyDF, reliability==\"medium\")$verdict),\n                  \", Fail: \",sum(subset(verifyDF, reliability==\"medium\")$verdict == FALSE), \"\\n\")\ncat(\"Low Reliable Success:\", sum(subset(verifyDF, reliability==\"low\")$verdict), \n                  \", Fail: \",sum(subset(verifyDF, reliability==\"low\")$verdict == FALSE), \"\\n\")\n\n\nscale_fill_manual2 <- function(){ \n  #return (scale_fill_manual(\"Verdict\",values=c(\"#f03b20\",\"#1f78b4\")))\n  #temporarily ignore below\n  if(length(unique(verifyDF$verdict))==2) \n    scale_fill_brewer(\"Verdict\",palette=\"Paired\") # Blue and light blue\n  #scale_fill_manual(\"Verdict\",values=c(\"#f03b20\",\"#1f78b4\")) #Blue and Red \n  else \n    scale_fill_manual(\"Verdict\",values=c(\"#1f78b4\"))\n}\n\nlibrary (ggplot2)\ntheme_update(axis.title.x = element_text(size = 20, vjust = -0.25),\n             axis.title.y = element_text(size = 20, angle = 90, vjust = 0.25),\n             axis.text.x = element_text(size = 16, color = \"black\"),\n             axis.text.y = element_text(size = 16, color = \"black\"),\n             title = element_text(size=8),\n             panel.background = element_blank(),\n             panel.grid.major = element_line(colour = \"grey90\"),\n             legend.position = \"bottom\",\n             legend.box = \"horizontal\",\n             legend.key = element_blank(), \n             legend.background = element_rect(fill=\"white\", size=0.25),\n             legend.text = element_text(size=16),\n             legend.title = element_text(size=16))\n\np <- ggplot(verifyDF, aes(x=reliability, fill=verdict)) + geom_bar()\np <- p + scale_y_continuous(\"Number Of Experiments\", limits=c(0,length(unique(verifyDF$expNo))))\np <- p + scale_fill_manual2() + guides(fill=guide_legend(reverse=TRUE)) \np <- p + ggtitle(titleTxt) + theme(panel.background=element_rect(fill=\"#FAFAFA\"), legend.position=\"bottom\")\np <- p + scale_x_discrete(drop=FALSE)\nprint(p)\n\nread.table(\"MDS_FP.DF\", header = TRUE)\n",
+    "created" : 1435016712096.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "247537125",
+    "id" : "D08FA1AD",
+    "lastKnownWriteTime" : 1435075343,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/countEquiDist.R",
+    "project_path" : "countEquiDist.R",
+    "properties" : {
+    },
+    "relative_order" : 25,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

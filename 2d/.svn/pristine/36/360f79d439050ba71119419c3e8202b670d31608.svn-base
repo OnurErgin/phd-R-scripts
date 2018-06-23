@@ -1,0 +1,41 @@
+Nx <- 5; Ny <- 4; dx <- 5; dy <- 10
+
+plotSamples <- FALSE
+outputToFile <- TRUE
+outputDirectory <- paste("./simOut-",Nx,"x",Ny,"-",dx,"mX",dy,"m/",sep="")
+
+if (!file.exists(outputDirectory) && outputToFile)
+  dir.create(outputDirectory,showWarnings=TRUE,recursive=TRUE)
+
+# Nx <- 10  # Number of nodes in X-axis
+# Ny <- 2 # Number of nodes in Y-axis
+# dx <- 1 # internode distances on x-dimension, first tested value: 2
+# dy <- 1.3 # internode distances on y-dimension, first tested value: 3
+
+Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)
+if (outputToFile){ 
+  write.table(Truth, paste( outputDirectory,"Truth.txt",sep=""))
+  write.table(sd_rayleigh, paste( outputDirectory,"sd_rayleigh.txt",sep=""))
+  write.table(sd_noise_dbm, paste( outputDirectory,"sd_noise_dbm.txt",sep=""))
+}
+
+startTime <- proc.time()
+runSet <- 1:1000
+for (runNo in runSet){
+  run <- runNo
+  source("2D-SimulatedNodes.R")
+  
+  if (outputToFile){
+    filename <- paste(outputDirectory,"2dSim-",Nx,"x",Ny,"-",dx,"mX",dy,"m-",run,".txt",sep="")
+    write.table(measurements, filename, col.names=TRUE, row.names=FALSE)
+    if(run == 1){
+      write.table(parameters, paste(outputDirectory,"parameters.txt",sep=""))
+    }
+    
+  rm("run")
+  }
+  rm("measurements")
+}
+## Print Elapsed Time
+endTime <- proc.time()
+print(endTime-startTime)

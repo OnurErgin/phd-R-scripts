@@ -1,0 +1,147 @@
+# Reference: 
+# http://www.r-bloggers.com/7-functions-to-do-metric-multidimensional-scaling-in-r/
+
+library(plyr)
+library(reshape)
+library(MASS)
+library(smacof)
+
+library(mapproj)
+
+source("mds2matrix.R")
+
+#source("configuration.R")
+#source("commonFunctions.R")
+d_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {
+  lamda <- 2.998e8/fc;
+  pl = pt-pr
+  d <- d0 * 10^((pl + 10*n*log10(lamda/(4*pi*d0))) / (10*n));
+  return(d)
+}
+  #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_10x2-2mX3m-Noise45dbm.csv.txt"
+  #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_10x2-2mX3m-Noise30dbm.csv.txt"
+  # Nx=10; Ny=2; dx=2; dy=3;
+  # Truth <- matrix(0:19, byrow=TRUE, ncol=Nx);
+  
+    DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_5x4-2mX3m-Noise45dbm.csv.txt"
+    #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_5x4-2mX3m-Noise30dbm.csv.txt"
+     Nx=5; Ny=4; dx=2; dy=3;
+    Truth <- matrix(0:19, byrow=TRUE, ncol=5)
+
+allstats <- read.csv (DATA_FILE, header=TRUE);
+experimentSet <- unique(allstats$run) ;# experimentSet <-  800 #21,168,214,218,270,535,799,879,975
+
+dv_type <- "avg_rssi"
+
+mds_node_sequence<-vector("list", length(experimentSet))
+
+all_stats_rssi <- subset(allstats, select=c(run, sender, receiver, avg_rssi))
+#all_stats_rssi <- subset(allstats, (sender!=as.character(refnode) & receiver!=as.character(refnode)), select=c(run, sender, receiver, avg_rssi))
+#  real_sequence <- real_sequence[-1]
+
+#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=avg_rssi)
+#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_mw(Pr=avg_mw, n=3))
+ all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_rss(pr=avg_rssi, n=3))
+
+startTime <- proc.time()
+cat(length(experimentSet), names(all_stats_rssi_distance)[4],"\n")
+#Error matrix
+ErrorMatrix <- matrix (data=NA, nrow=max(allstats$run), ncol=3, byrow=TRUE, dimnames=list(NULL,c("expNo","maxError","sumError")))
+
+iteration <- 0
+MDSsuccess <- 0
+fail.list <- c()
+success.list <- c()
+
+for (i in experimentSet) {
+  iteration <- iteration + 1
+  cat(iteration,": ",sep="")
+  run_rssi_distance <- subset(all_stats_rssi_distance, run==i)
+
+  run_rssi_distance_c <- cast(run_rssi_distance, receiver ~ sender, fill=24, value="distance")
+   # for (r in 1:nrow(run_rssi_distance_c)) run_rssi_distance_c[r,r+1] <- 0
+  
+  run_rssi_distance_d <-as.dist(run_rssi_distance_c)
+
+   #mds_node_coordinates<- cmdscale(run_rssi_distance_d,k=1)
+  
+  mds_node_coordinates<- smacofSym(run_rssi_distance_d,ndim=2, type="ratio")
+  #Truth
+  #b <- melt(Truth)
+  #b <- b[order(b[,1]),1:2]
+  #b <- b[sample(nrow(b)),] # shuffle
+  #mds_node_coordinates<- smacofConstraint(run_rssi_distance_d,ndim=2, constraint="diagonal", external=b) # check rect_constr as external
+  p <- plot(mds_node_coordinates)
+  
+  #map.grid(c(-1,1,-1,1),nx=4, ny=5)
+#  orgGrid<-data.frame(D1=c(2,4,6,8,10,2,4,6,8,10,2,4,6,8,10,2,4,6,8,10), D2=rev(c(rep(12,5),rep(9,5), rep(6,5),rep(3,5) )))
+#  row.names(orgGrid) <- 0:19
+  #library(ggplot2); 
+#   ggplot(orgGrid, aes(x=D1, y=D2)) + geom_text(label=row.names(truthGrid),vjust=-1) + geom_point() + 
+#                                        scale_x_discrete(breaks=seq(0,11,2), limits=c(0:12)) + scale_y_discrete(breaks=seq(0,13,3), limits=c(0:13)) +
+#                                        theme_update(panel.grid.major=element_blank(),panel.grid.minor=element_blank(), panel.background=element_rect(color="white")) + theme_bw()
+  #ggsave("originalGrid.png")
+  
+  r <- stretch.and.snap(mds_node_coordinates$conf, Nx=Nx, Ny=Ny, dx=dx, dy=dy)
+
+  is.success <- FALSE
+  for (f in 1:4) { # rotate max 4 times until 0 is at the corner
+    if (r[1,1] != 0)
+      r <- rotate(r)
+    else break;
+  }
+  if (all.equal(Truth,r) == TRUE || all.equal(Truth,t(r)) == TRUE ){
+      is.success <- TRUE
+      #print(r); 
+      cat("matched experiment ", i, "\n")
+      success.list <- c(success.list,i)
+  } else {
+    cat ("no match for experiment ", i, "\n")
+    fail.list <- c(fail.list,i)
+  }
+
+  
+#print(is.success)
+
+  #cat("i=",i,all(sequence==real_sequence),"\n")
+  
+#   mds_node_sequence[[iteration]]<-sequence
+#   #if (sequence[length(sequence)]==real_sequence[[1]]) 
+#   #  mds_node_sequence[[iteration]]<-rev(sequence)
+#   if (identical(sequence,real_sequence1) || identical(sequence,real_sequence2) || identical(sequence,real_sequence3) || identical(sequence,real_sequence4))
+#   {
+#     cat("TRUE, ")
+#     MDSsuccess <- MDSsuccess +1
+#   }
+    
+}
+
+#paste(fail.list,collapse=",")
+
+cat("Total Success: ", length(success.list), "\n")
+cat("Total Fail: ", length(fail.list), "\n")
+
+# print(MDSsuccess)
+# correct<-lapply(mds_node_sequence, identical, real_sequence)
+# length(correct[correct==TRUE])
+  
+if (FALSE){
+  binaryResults <- c()
+  for(i in 1:length(mds_node_sequence))
+  {
+  	binaryResults <- rbind(binaryResults,all(mds_node_sequence[[i]]==real_sequence))
+  	Error <- findError (as.integer(mds_node_sequence[[i]]),as.integer(real_sequence))
+    ErrorMatrix[i,] <- c(i,max(Error),sum(Error))
+  }
+  
+  meanError <- sum(ErrorMatrix[,"maxError"]) / sum(ErrorMatrix[,"maxError"] > 0) 
+}
+## Print Elapsed Time
+endTime <- proc.time()
+print(endTime-startTime)
+
+cat(paste("#RefNode:",refnode,"Success:",sum(binaryResults)), "out of ", length(binaryResults),"experiments",
+    "MeanError=", meanError,"\n")
+
+
+#findError (as.integer(mds_node_sequence[[2000]]),as.integer(real_sequence))

@@ -1,0 +1,121 @@
+library(ggplot2)
+
+
+mw2dbm <- function (milliW) { dBm <- 10*log10((milliW)); return(dBm) }
+dbm2mw <- function (dBm)   { milliW <- 10^(dBm/10); return(milliW) }
+
+rayleigh_rnd <- function(mean=0,sd=1) { return(sqrt(rnorm(1,mean,sd)^2 + rnorm(1,mean,sd)^2)) }
+
+
+## Pr_in_mW
+#  Pt 	: Transmit power 
+#  fc 	: Frequency
+#  d 	: Distance in meters
+#  alpha: Path loss Alpha
+#  h 	: Rayleigh random variable
+#  Pn 	: White noise
+##
+Pr_in_mW <- function (Pt, fc, d, alpha, h, Pn) {
+  c <- 2.998e8 #speed of light (m/s)
+  lambda <- c/fc;
+  Pr <- (h^2)*Pt*((lambda/(4*pi*d))^alpha) + Pn^2
+  return(Pr)
+}
+
+# Radio parameters
+Pt_dbm <- 0 
+fc1 <- 2.405e9
+spacing <- 0.005e9
+channels <- (11:26)
+ch1 <- channels[1]
+ch2fc <- function (ch, firstChannel=ch1, firstFreq= fc1, ch_spacing=spacing) {return((ch-firstChannel)*ch_spacing + firstFreq)}
+radioSensitivity <- -97
+# Channel Settings
+pathloss_alpha <- 3
+sd_rayleigh <- 10
+mean_rayleigh <- 0
+
+sd_noise_dbm <- -45 
+mean_noise <- 0
+
+sd_noise_mW <- dbm2mw (sd_noise_dbm)
+Pt_mW <- dbm2mw (Pt_dbm)
+
+Truth <- matrix(c(0:19), nrow=2, byrow=TRUE)
+
+Nx <- 10  # Number of nodes in X-axis
+Ny <- 2 # Number of nodes in Y-axis
+
+dx <- 2 # internode distances on x-dimension
+dy <- 3 # internode distances on y-dimension
+distance <- function (positions, N1, N2) {
+  x1 <- subset(positions, NodeId == N1, select=c("X"))
+  y1 <- subset(positions, NodeId == N1, select=c("Y"))
+  
+  x2 <- subset(positions, NodeId == N2, select=c("X"))
+  y2 <- subset(positions, NodeId == N2, select=c("Y"))
+  
+  return ( sqrt( ((x2 - x1)*dx)^2 + ((y2 - y1)*dy)^2 ) )
+}
+
+truth.distance <- function (positions, N1, N2) {
+  x1 <- which(positions == N1, arr.ind=TRUE)[,"row"]
+  y1 <- which(positions == N1, arr.ind=TRUE)[,"col"]
+  
+  x2 <- which(positions == N2, arr.ind=TRUE)[,"row"]
+  y2 <- which(positions == N2, arr.ind=TRUE)[,"col"]
+  
+  return ( sqrt( ((x2 - x1)*dx)^2 + ((y2 - y1)*dy)^2 ) )
+}
+
+
+nodeCoords <- matrix(data = NA, nrow = 0, ncol = 3, byrow = TRUE, dimnames = list(NULL,c("NodeId","X","Y")))
+
+nodeId <- 0
+for (nx in 0:(Nx-1)){
+  for (ny in 0:(Ny-1)){
+    nodeCoords <- rbind (nodeCoords, c(nodeId, nx, ny))
+    nodeId <- nodeId + 1
+  }
+}
+nodeId <- nodeId - 1
+
+nodeCoordsDF <- as.data.frame(nodeCoords)
+p <- ggplot(nodeCoordsDF, aes(x=X, y=Y))
+p <- p + geom_point() + geom_text(aes(label=NodeId),hjust=1, vjust=1)
+print(p)
+
+ALL_CHANNELS <- 11:26
+PACKET_NUMS <- 1:10
+colnames.list <- c("sender","receiver","channel","packetnum","rssi")
+
+write.table(Truth, "Truth.txt")
+
+for (run in 1:100){
+  
+  measurements <- data.frame(sender=integer(0), receiver = integer(0), channel = integer(0), packetnum = integer(0), rssi = integer(0))
+  
+  for (s in Truth) {
+    for (r in Truth){
+      if(r == s)
+        next;
+      dist.s.r <- truth.distance(Truth,s,r)
+      for (ch in ALL_CHANNELS){
+      
+        h <- rayleigh_rnd(mean_rayleigh, sd_rayleigh)
+        
+        for (pn in PACKET_NUMS){
+          Pn <- rnorm(1, mean=0, sd=sd_noise_mW)
+          P <- Pr_in_mW(Pt_mW, ch2fc(ch), dist.s.r, pathloss_alpha, h, Pn)
+          rssi <- round(mw2dbm(P)) - 5
+          if (rssi >= radioSensitivity)
+            measurements <- rbind(measurements,c(s,r,ch,pn,rssi))
+          #print(measurements[nrow(measurements),])
+        }
+      }
+    }
+  }
+  colnames(measurements) <- colnames.list
+  filename <- paste("2dSim-",Nx,"x",Ny,"-",run,".txt",sep="")
+  write.table(measurements, filename, col.names=TRUE, row.names=FALSE)
+}

@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(ggplot2)\n\nsource(\"../commonFunctions.R\")\nTruth  \t<- c(16,138,96,141,92,145,88,147,10,153);\nsimTruth <- c(1:10);\n\nmeasurementDir <- \"../measurements/4thFloor/FourthFloor_chLoop2000withPktID/\"\n\nsimulationDir <- \"../measurements/simulation/\"\n\nexpName <- strsplit(sourceDir,\"/\")[[1]][4]\n\nexpRange <- 2:3\nmesPackets <- readExpFileRange(measurementDir,expRange)\nsimPackets <- readExpFileRange(simulationDir,expRange, prefix=\"sim16ch_\")\n\nNs <- 1\nNr <- 2\n\nmPackets <- subset(mesPackets, sender == Truth[Ns] & receiver%in%Truth[Nr])\nsPackets <- subset(simPackets, sender == simTruth[Ns] & receiver%in%simTruth[Nr])\n\nmPackets$type <- \"measurement\"\nsPackets$type <- \"simulation\"\npackets <- rbind(mPackets,sPackets)\n\np <- ggplot(packets, aes(x=channel, y=rssi))\np <- p + geom_point()\np <- p + facet_wrap(~type)\n\nprint(p)\n",
+    "created" : 1406290043972.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "224214981",
+    "id" : "694ECCE",
+    "lastKnownWriteTime" : 1406317728,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/AllScripts/simVSmeasurement.R",
+    "project_path" : "simVSmeasurement.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 0,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

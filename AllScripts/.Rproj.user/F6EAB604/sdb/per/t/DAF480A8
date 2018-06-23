@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(ggplot2)\nlibrary (grid)\nfailedExperiments <- read.table(\"../temp/failSequences.txt\", header=TRUE)\n\ntheme_update(axis.title.x = element_text(size = 12, vjust = -0.25),\n             axis.title.y = element_text(size = 14, angle = 90, vjust = 1),\n             axis.text.x = element_text(size = 11),\n             axis.text.y = element_text(size = 11),\n             panel.background = element_blank(),\n             panel.grid.major = element_line(colour = \"grey90\"),\n             panel.grid.major.y=element_blank(),\n             panel.grid.major.x=element_blank(),\n             legend.position = \"right\",\n             legend.box = \"horizontal\",\n             legend.key = element_blank(), \n             legend.background = element_rect(fill=\"white\", size=0.25))\n\np <- ggplot(failedExperiments, aes(x=ExpNo,y=1)) + geom_bar(stat=\"identity\", position=\"dodge\", width=4)\np <- p + scale_y_discrete(name=\"Fail\", limits=c(0,1.5),breaks=c(1)) + xlab(\"Experiment No\")\np <- p + annotate(\"text\",x=250, y=1.2, label= \"20.12.2012 Thu 16:57\\nto\\n21.12.2012 Fri 17:48\", color=\"red\", size=3) +\n         annotate(\"rect\", xmin = 0, xmax = 500, ymin = 0.9, ymax = 1.4, alpha = 0.05) +\n         annotate(\"text\",x=1780, y=1.2, label= \"26.12.2012 Thu 10:42\\nto\\n26.12.2012 Fri 23:41\", color=\"red\",size=3) +\n         annotate(\"rect\", xmin = 1500, xmax = 2040, ymin = 0.9, ymax = 1.4, alpha = 0.05) \np <- p + annotate(\"text\", x=1000, y=1.5, label=\"10 Nodes\\n 93.55% Success\", size=5)\n\nprint(p)\n\nggsave(filename=\"./plots/failedIndices.pdf\", plot=p, width=6, height=5)\n\n\n",
+    "created" : 1400601383028.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1731109044",
+    "id" : "DAF480A8",
+    "lastKnownWriteTime" : 1400608345,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/AllScripts/failIndices.R",
+    "project_path" : "failIndices.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 0,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

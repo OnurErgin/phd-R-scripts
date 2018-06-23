@@ -1,0 +1,100 @@
+# Reference: 
+# http://www.r-bloggers.com/7-functions-to-do-metric-multidimensional-scaling-in-r/
+
+library(plyr)
+library(reshape)
+library(MASS)
+library(smacof)
+
+#source("configuration.R")
+#source("commonFunctions.R")
+d_from_rss <- function(pr, pt=0, fc=2.405e9, n=3, d0=1) {
+  lamda <- 2.998e8/fc;
+  pl = pt-pr
+  d <- d0 * 10^((pl + 10*n*log10(lamda/(4*pi*d0))) / (10*n));
+  return(d)
+}
+
+  DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_10x2-2mX3m-.csv.txt"
+  Truth1 <- c(0:9,19:10) ; Truth2<-c(9:0,10:19); Truth3<-c(10:19,9:0); Truth4 <- c(19:10,0:9); 
+  
+  #DATA_FILE <- "./inputs_simulation/distance_vector_stats_all_channels_5x4-2mX3m-.csv.txt"
+  #Truth1 <- c(0:4,9:5,10:14,19:15) ; Truth2<-c(4:0,5:9,14:10,15:19); Truth3<-c(15:19,14:10,5:9,4:0); Truth4 <- c(19:15,10:14,9:5,0:4);
+allstats <- read.csv (DATA_FILE, header=TRUE);
+experimentSet <- unique(allstats$run)
+
+real_sequence1<-as.character(Truth1)
+real_sequence2<-as.character(Truth2)
+real_sequence3<-as.character(Truth3)
+real_sequence4<-as.character(Truth4)
+
+dv_type <- "avg_rssi"
+
+mds_node_sequence<-vector("list", length(experimentSet))
+
+all_stats_rssi <- subset(allstats, select=c(run, sender, receiver, avg_rssi))
+#all_stats_rssi <- subset(allstats, (sender!=as.character(refnode) & receiver!=as.character(refnode)), select=c(run, sender, receiver, avg_rssi))
+#  real_sequence <- real_sequence[-1]
+
+#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=avg_rssi)
+#all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_mw(Pr=avg_mw, n=3))
+ all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_from_rss(pr=avg_rssi, n=3))
+
+startTime <- proc.time()
+cat(length(experimentSet), names(all_stats_rssi_distance)[4],"\n")
+#Error matrix
+ErrorMatrix <- matrix (data=NA, nrow=max(allstats$run), ncol=3, byrow=TRUE, dimnames=list(NULL,c("expNo","maxError","sumError")))
+
+iteration <- 0
+MDSsuccess <- 0
+for (i in experimentSet) {
+  cat(iteration,": ",sep="")
+  iteration <- iteration + 1
+  run_rssi_distance <- subset(all_stats_rssi_distance, run==i)
+
+  run_rssi_distance_c <- cast(run_rssi_distance, receiver ~ sender, fill=24, value="distance")
+   # for (r in 1:nrow(run_rssi_distance_c)) run_rssi_distance_c[r,r+1] <- 0
+  
+  run_rssi_distance_d <-as.dist(run_rssi_distance_c)
+
+   #mds_node_coordinates<- cmdscale(run_rssi_distance_d,k=1)
+  mds_node_coordinates<- smacofSym(run_rssi_distance_d,ndim=2, type="ratio")
+  
+  sequence<-names(sort(mds_node_coordinates$conf[,1]))
+  
+  #cat("i=",i,all(sequence==real_sequence),"\n")
+  
+  mds_node_sequence[[iteration]]<-sequence
+  #if (sequence[length(sequence)]==real_sequence[[1]]) 
+  #  mds_node_sequence[[iteration]]<-rev(sequence)
+  if (identical(sequence,real_sequence1) || identical(sequence,real_sequence2) || identical(sequence,real_sequence3) || identical(sequence,real_sequence4))
+  {
+    cat("TRUE, ")
+    MDSsuccess <- MDSsuccess +1
+  }
+    
+}
+print(MDSsuccess)
+correct<-lapply(mds_node_sequence, identical, real_sequence)
+length(correct[correct==TRUE])
+  
+if (FALSE){
+  binaryResults <- c()
+  for(i in 1:length(mds_node_sequence))
+  {
+  	binaryResults <- rbind(binaryResults,all(mds_node_sequence[[i]]==real_sequence))
+  	Error <- findError (as.integer(mds_node_sequence[[i]]),as.integer(real_sequence))
+    ErrorMatrix[i,] <- c(i,max(Error),sum(Error))
+  }
+  
+  meanError <- sum(ErrorMatrix[,"maxError"]) / sum(ErrorMatrix[,"maxError"] > 0) 
+}
+## Print Elapsed Time
+endTime <- proc.time()
+print(endTime-startTime)
+
+cat(paste("#RefNode:",refnode,"Success:",sum(binaryResults)), "out of ", length(binaryResults),"experiments",
+    "MeanError=", meanError,"\n")
+
+
+#findError (as.integer(mds_node_sequence[[2000]]),as.integer(real_sequence))

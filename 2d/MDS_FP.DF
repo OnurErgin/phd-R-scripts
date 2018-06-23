@@ -1,0 +1,4 @@
+"refnode" "noise" "topology" "algorithm" "success" "note"
+2 -45 "5x5-3mx3m" "MDS-MAP" 1 ""
+2 -45 "10x5-3mx3m" "MDS-MAP" 0.99 ""
+2 -30 "10x5-3mx3m" "MDS-MAP" 0 ""

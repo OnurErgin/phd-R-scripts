@@ -1,0 +1,151 @@
+###
+## 	countProbResults.R 01.11.2013 oergin
+# 	counts results from files that contain sequences
+# 	v2 - Works without modification.
+### ------
+
+source("configuration.R")
+
+# Below are obtained from configuration.R
+#
+#	Truth<-c(16,138,96,141,92,145,88,147,10,153);
+#	refnode <- 16
+#	numnodes <- 10
+# Truth <- rev(Truth)
+WD <- getwd()
+setwd (outputDirectory) # from configuration.R
+
+files <- Sys.glob("probabilitySeqDF*txt")
+#print(files)
+
+totalSuccess <- 0
+totalChecks <- 0
+
+failSequences <- matrix(data = NA, nrow = 0, ncol = 1+numnodes, byrow = TRUE, dimnames = list(NULL,c("ExpNo",paste("N",1:numnodes,sep=""))))
+failRealIndexes <- c()
+
+TrustColumns <- c("expNo","verdict","P1","P2","NP1","NP2","NPdiff") # NP: Normalized Probability
+Trust <- matrix(data = NA, nrow = length(files), ncol = length(TrustColumns), byrow = TRUE, dimnames = list(NULL,TrustColumns))
+
+JointPcolumns <- c("expNo","verdict","rank",paste("JP",1:numnodes,sep=""))
+maxRankLevel <- 2
+JointP <- matrix(data = NA, nrow = length(files)*maxRankLevel, ncol = length(JointPcolumns), byrow = TRUE, dimnames = list(NULL,JointPcolumns))
+  
+#Error matrix
+ErrorMatrix <- matrix (data=NA, nrow=length(files), ncol=2, byrow=TRUE, dimnames=list(NULL,c("expNo","maxError")))
+
+#Trust icin kullanilacak degerler burada.
+PsOfBestSeqscolumns <- c("expNo","verdict","rank",paste("P",1:numnodes,sep=""))
+PsOfBestSeqs <- matrix(data = NA, nrow = length(files)*maxRankLevel, ncol = length(PsOfBestSeqscolumns), byrow = TRUE, dimnames = list(NULL,PsOfBestSeqscolumns))
+
+i <- 0
+
+for (resultFile in files)
+{
+  i <- i+1
+  
+  expNo <- as.numeric(gsub("\\D", "", resultFile))
+  
+  probabilitiesDF_FILE <- paste("probabilitiesDF",expNo,".txt",sep="")
+	
+  probabilitySeqDF <- read.table(resultFile, header=TRUE)
+  probabilitiesDF <- read.table(probabilitiesDF_FILE, header=TRUE)
+  
+  pOrder <- with(probabilitySeqDF,order(-prob))
+  probabilitySeqDF <- probabilitySeqDF[pOrder,] #ordered
+  probabilitiesDF <- probabilitiesDF[pOrder,] #ordered according to P of above
+	## RESULT
+	#winningSequence <- probabilitySeqDF[which.max(probabilitySeqDF$prob),1:numnodes] 
+	winningSequence <- probabilitySeqDF[1,1:numnodes]
+	verdict <- all(winningSequence == Truth)
+	print(probabilitySeqDF[which.max(probabilitySeqDF$prob),]); cat("Winner is:", verdict,"\n"); 
+	if(verdict == TRUE)
+	{
+		totalSuccess <- totalSuccess +1
+	}
+	else {
+		failSequences <- rbind(failSequences,cbind("ExpNo"=expNo,winningSequence))
+		failRealIndexes <- c(failRealIndexes,expNo)
+	}
+	
+  #Compute 1D Position Error:
+  Error <- c()
+  for (p in 1:length(Truth))
+  {
+    location.in.winningSequence <- which(winningSequence == Truth[p], arr.ind=FALSE)
+    difference.in.location <- abs(location.in.winningSequence - p)
+    Error <- c(Error, difference.in.location)
+  }
+  ErrorMatrix[i,] <- c(expNo, max(Error))
+		
+	totalChecks <- totalChecks +1
+	cat("ExpNo:",expNo,"\nTotalSUCCESS=",totalSuccess, "/",totalChecks,"=",totalSuccess/totalChecks, " in", length(files),"files\n");
+  
+  # Compute Trust Entity
+  P1 <- probabilitySeqDF[1,"P"]
+  P2 <- probabilitySeqDF[2,"P"]
+
+  NP1 <- P1/(P1+P2)
+  NP2 <- P2/(P1+P2)
+  NPdiff <- NP1-NP2
+  Trust[i,] <- c(expNo,as.numeric(verdict),P1,P2,NP1,NP2,NPdiff)
+  
+  #Put Winner and best Loser in a matrix
+  for(r in 1:maxRankLevel) {
+    jpList <- c()
+    for (n in 1:numnodes)
+    {
+      jpList <- c(jpList,prod(probabilitiesDF[r,1:n]))
+    }
+    ranksSequence <- probabilitySeqDF[r,1:numnodes]
+    ranksVerdict <- all(ranksSequence == Truth)
+    JointP[(i-1)*maxRankLevel+r,] <- c(expNo,as.numeric(ranksVerdict),r,jpList)
+    PsOfBestSeqs[(i-1)*maxRankLevel+r,] <- c(expNo, as.numeric(ranksVerdict), r, as.numeric(probabilitiesDF[r,]))
+  }
+  
+}
+
+if (length(failRealIndexes) > 0)
+{
+	failSequences <- failSequences[order(failSequences[,1]),] #Sort using ExpNo
+	rownames(failSequences)<-1:nrow(failSequences)
+	failRealIndexes <- sort(failRealIndexes)
+	
+	write.table(failSequences, file="failSequences.txt", sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+}
+
+cat ("Error:\n")
+print(Error)
+
+cat ("Truth:\n")
+print(Truth)
+
+cat("Failed sequences:",nrow(failSequences),"\n")
+print (failSequences)
+
+cat("Failed experiments:",length(failRealIndexes),"\n")
+print(failRealIndexes)
+
+cat("TotalSUCCESS=",totalSuccess, "/",totalChecks,"=",totalSuccess/totalChecks, " in", length(files),"files\n");  # Repeat print
+
+# Write Trust Table into a file
+#Trust <- Trust [with(Trust,order(expNo)),] # Atomic vectorlerle calismiyor galiba
+Trust <- Trust[order(Trust[,"expNo"]),]
+TrustFile <- "Trust.txt"
+write.table(Trust, file=TrustFile, sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+cat(TrustFile, "is written..\n")
+
+JointP <- JointP[order(JointP[,"expNo"]),]
+JointPFile <- "JointP.txt"
+write.table(JointP, file=JointPFile, sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+cat(JointPFile,"is written..\n")
+
+PsOfBestSeqs <- PsOfBestSeqs[order(PsOfBestSeqs[,"expNo"]),]
+PsOfBestSeqsFile <- "PsOfBestSeqs.txt"
+write.table(PsOfBestSeqs, file=PsOfBestSeqsFile, sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+cat(PsOfBestSeqsFile,"is written..\n")
+
+cat("Mean of maxError is", mean(ErrorMatrix[,"maxError"]),"\n")
+
+setwd(WD)
+

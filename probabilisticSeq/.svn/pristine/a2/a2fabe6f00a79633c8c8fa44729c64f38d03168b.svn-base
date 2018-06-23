@@ -1,0 +1,129 @@
+
+files <- Sys.glob("verify/verify4thFlSouthWindowReverse/*")
+
+joinReports <- function(files) {
+  verifyDF <- data.frame()
+  for (f in files)
+    verifyDF <- rbind(verifyDF, read.table(f, header=TRUE, stringsAsFactors=FALSE))
+  
+  expNoOrder <- with(verifyDF,order(expNo))
+  verifyDF <- verifyDF[expNoOrder,]
+  row.names(verifyDF) <- 1:nrow(verifyDF)
+  return(verifyDF)
+}
+
+#Filename <- "verify/4thFloorNorthSide-nointerference-verify1-300.txt"
+#analyse <- read.table (Filename, header=TRUE)
+
+analyse <- joinReports(files)
+
+experiments <- unique(analyse$expNo)
+success <- 0
+match <- 0
+truePositive <- c() # TRUE TRUE & match
+falsePositive <- c() # FALSE FALSE & match
+
+trueNegative <- c() # FALSE TRUE 
+falseNegative <- c() # TRUE FALSE
+
+for (e in experiments) {
+	
+	if (analyse[(e-1)*4+1,"isCorrect"])
+		success <- success +1
+	
+	if (analyse[(e-1)*4+1,"match"])
+		match <- match +1
+	
+	if(analyse[(e-1)*4+1,"isCorrect"] == TRUE & analyse[(e-1)*4+1,"verifyIsCorrect"] == TRUE )
+		truePositive <- c(truePositive,e)
+	
+	if(analyse[(e-1)*4+1,"isCorrect"] == FALSE & analyse[(e-1)*4+1,"match"] == TRUE)
+		falsePositive <- c(falsePositive,e)
+		
+	if(analyse[(e-1)*4+1,"isCorrect"] == FALSE & analyse[(e-1)*4+1,"match"] == FALSE)
+		trueNegative <- c(trueNegative,e)
+	
+	if(analyse[(e-1)*4+1,"isCorrect"] == TRUE & analyse[(e-1)*4+1,"match"] == FALSE)
+		falseNegative <- c(falseNegative,e)
+
+		
+}
+
+#matches <- subset(analyse, match == TRUE)
+
+cat("success: ", success, "\n")
+cat("match: ", match, "\n")
+
+cat("truePositive: ", length(truePositive), "\n")
+cat("falsePositive: ", length(falsePositive), "\n")
+cat("trueNegative: ", length(trueNegative), "\n")
+cat("falseNegative: ", length(falseNegative), "\n")
+
+#plot(subset(analyse, expNo %in% truePositive & Rank == 1 & verifyRank ==1)$jointProb)
+
+# Unreliable measurements
+unreliables <- c()
+for (e in unique(analyse$expNo))
+{
+  tDF <- subset(analyse, expNo == e)
+  seqStrings <- c(as.character(tDF$computedSeq),tDF$verifySeq)
+  
+  thisExpIsUnreliable <- FALSE
+  for(s in seqStrings) {
+    
+    if (grepl("NA",s)) # contains NAs
+    {
+      thisExpIsUnreliable <- TRUE
+      unreliables <- c(unreliables,e)
+    } else
+      { 
+        splitted <- as.data.frame(strsplit(s,","))
+        if (TRUE %in% (splitted == 0)) # contains 0s
+        {
+          thisExpIsUnreliable <- TRUE
+          unreliables <- c(unreliables,e)
+        }
+      }
+    
+    if(thisExpIsUnreliable)
+      break
+  }
+}
+
+DF <- data.frame()
+for (e in unique(analyse$expNo)) {
+  xDF <- subset (analyse, expNo == e)
+  xDF <- xDF[xDF$jointProb == max(xDF$jointProb),]
+  DF <- rbind(DF,xDF)
+}
+
+matchPositive <- data.frame()
+for (e in unique(analyse$expNo)) {
+  matchPositive <- rbind (matchPositive, subset(analyse,expNo == e & match==TRUE))
+}
+
+bestVerdicts <- data.frame()
+for (e in unique(matchPositive$expNo)) {
+  eMP <- subset(matchPositive, expNo==e)
+  rowWithMaxProb <- which(eMP==max(eMP$verifyProb),arr.ind=TRUE)[,"row"]
+  bestVerdicts <- rbind(bestVerdicts,eMP[rowWithMaxProb,])
+}
+
+library("ggplot2")
+p <- ggplot(DF, aes(y=jointProb, x=expNo, color=isCorrect))
+p <- p + geom_point(size=1) + facet_grid(~match)
+print(p)
+
+
+# library("plyr")
+# plied <- ddply (analyse, .(expNo), summarize,
+#                 maxJointProb = max(jointProb),
+#                 verdict = function(DF) {DF[DF$jointProb == max(DF$jointProb),]$isCorrect} )
+#                 //verdict = subset(isCorrect,jointProb==maxJointProb))
+# plied2 <- ddply (analyse, .(expNo), summarize,
+#                 maxJointProb = max(jointProb),
+#                 verdict = isCorrect)
+
+p <- ggplot(subset(analyse, expNo %in% truePositive & Rank == 1 & verifyRank ==1), aes(y=jointProb, x=expNo))
+p <- p + geom_point(size=1)
+print(p)

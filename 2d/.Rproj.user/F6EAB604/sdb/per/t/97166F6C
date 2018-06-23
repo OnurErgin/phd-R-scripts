@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "#requires expID defined.\n# expID must be between 1 and length(noise_levels)\nnPackets <- 40\n\nnoise_levels <- seq(from=-20,to=-80,by=-5) \n\n\n  files <- Sys.glob(paste(\"inputs_simulation/noise_diversity/2D-analyze-5x4-5mX10m-Prune2-Noise\",noise_levels[expID],\"dbm.txt\",sep=\"\"))\n  prune <- \"2\"; sd_rayleigh<-15; Pn <- noise_levels[expID]#dbm \n  tag <- paste(sep=\"\",\"Sim-Pn=\",Pn,\"-\")\n  Nx <- 5; Ny <- 4; dx <- 5; dy <- 10\n  expName <- paste(sep=\"\",tag,Nx,\"x\",Ny,\"_\",dx,\"mX\",dy,\"m-\",\"prune\",prune)\n  Truth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)\n  TruthSequence <- c(0:4,9:5,10:14,19:15)\n",
+    "created" : 1422205992611.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "115483929",
+    "id" : "97166F6C",
+    "lastKnownWriteTime" : 1422205907,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/noise_diversityResultFiles.R",
+    "project_path" : "noise_diversityResultFiles.R",
+    "properties" : {
+    },
+    "relative_order" : 14,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "Nx <- 10; Ny <- 5; dx <- 3; dy <- 3\n\nTruth <- matrix (c(0:(Nx*Ny-1)), nrow=Ny, byrow=TRUE)\n\n#Create C shape\n#Truth[3:4,3:6] <- -1\n\n# Nx <- 10  # Number of nodes in X-axis\n# Ny <- 2 # Number of nodes in Y-axis\n# dx <- 1 # internode distances on x-dimension, first tested value: 2\n# dy <- 1.3 # internode distances on y-dimension, first tested value: 3\n\nrunSet <- 1#:100\n\n# Radio parameters\nPt_dbm <- 0 \nfc1 <- 2.405e9\nspacing <- 0.005e9\nchannels <- (11:26)\nch1 <- channels[1]\nch2fc <- function (ch, firstChannel=ch1, firstFreq= fc1, ch_spacing=spacing) {return((ch-firstChannel)*ch_spacing + firstFreq)}\nradioSensitivity <- -97\n# Channel Settings\npathloss_alpha <- 3\nsd_rayleigh <- 15 #org 10, 15 is very overlapping\nmean_rayleigh <- 0\n\nsd_noise_dbm <- -30\n#sd_noise_dbm <- -30 #test : -30 daha iyi galiba. yakin mesafe icin\nmean_noise <- 0\n\nplotSamples <- TRUE\noutputToFile <- FALSE\noutputDirectory <- paste(\"./simOut-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-Noise\",sd_noise_dbm,\"dbm/\",sep=\"\")\n\nif (!file.exists(outputDirectory) && outputToFile)\n  dir.create(outputDirectory,showWarnings=TRUE,recursive=TRUE)\n\n\nstartTime <- proc.time()\n\nfor (runNo in runSet){\n  run <- runNo\n  source(\"2D-SimulatedNodes.R\")\n  \n  # plotSamples <- TRUE\n  if (plotSamples){\n    a<-subset(as.data.frame(measurements),sender==0 & receiver %in% c(10,1,11,2,12)); a$receiver <- factor(a$receiver, levels=c(1,10,11,2,12))\n    p <- ggplot (a,aes(x=channel,y=rssi,group=receiver)) + geom_boxplot() + facet_grid( . ~ receiver)\n    #p <- ggplot (a,aes(x=channel,y=rssi,group=channel)) + geom_boxplot() + facet_grid( . ~ receiver)\n    print(p)\n  }\n  \n  if (outputToFile){\n    filename <- paste(outputDirectory,\"2dSim-\",Nx,\"x\",Ny,\"-\",dx,\"mX\",dy,\"m-\",run,\".txt\",sep=\"\")\n    write.table(measurements, filename, col.names=TRUE, row.names=FALSE)\n    if(run == 1){\n      write.table(parameters, paste(outputDirectory,\"parameters.txt\",sep=\"\"))\n      write.table(Truth, paste( outputDirectory,\"Truth.txt\",sep=\"\"))\n    }\n    \n    rm(\"run\")\n    rm(\"measurements\")\n  }\n}\n## Print Elapsed Time\nendTime <- proc.time()\nprint(endTime-startTime)",
+    "created" : 1417508546073.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1037015163",
+    "id" : "87A74B9B",
+    "lastKnownWriteTime" : 1435090069,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/startSimulation.R",
+    "project_path" : "startSimulation.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

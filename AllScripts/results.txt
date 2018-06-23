@@ -1,0 +1,117 @@
+Simple-Bayesian vs others
+4th Floor 1st row (South Side, long side)
+
+"algorithm" "direction" "success"
+MDS_d(avg_rssi) Normal 307
+MDS_d(avg_rssi) Reverse 5
+
+                Normal   Reverse
+MDS d(avg_rssi):307      5
+MDS avg_rss:    1701     5
+
+Greedy Avg:     1996     171
+Greedy AvgCh11: 83       0    
+Greedy AvgCh18: 1777     1997
+Greedy AvgCh26: 0        0
+
+NORMAL: successCh11: 83   successCh18: 1777 	successCh26: 0 	successMean: 1996 
+REVERSE: successCh11: 0   successCh18: 1997 	successCh26: 0 	successMean: 171 
+
+4th Floor North Side: (short side)
+experimentSet: 693
+NORMAL: successCh11: 65   successCh18: 690 	successCh26: 25 	successMean: 601
+REVERSE: successCh11: 131   successCh18: 573 	successCh26: 25 	successMean: 692 
+
+MDS: "RefNode: 152 Success: 692"
+MDS: "RefNode: 140 Success: 692" reverse
+
+###############################
+Rayleigh SIMULATION
+experimentSet: 2000
+NORMAL: successCh11: 775   successCh18: 750 	successCh26: 758 	successMean: 2000
+REVERSE: successCh11: 637   successCh18: 673 	successCh26: 639 	successMean: 2000
+
+MDS: RefNode: 1 Success: 1737 out of  2000 experiments
+MDS: RefNode: 10 Success: 1702 out of  2000 experiments
+
+mw:
+NORMAL: successCh11: 66   successCh18: 690 	successCh26: 25 	successMean: 692
+REVERSE: successCh11: 132   successCh18: 574 	successCh26: 26 	successMean: 692 
+
+####################INTERFERENCE--RESULTS##########
+no interference:
+
+##mw:
+##NORMAL: successCh11: 300   successCh18: 300 	successCh26: 300 	successMean: 300
+##REVERSE: successCh11: 118   successCh18: 289 	successCh26: 0 	successMean: 300
+
+rssi: 
+NORMAL: successCh11: 300   successCh18: 300 	successCh26: 300 	successMean: 300
+REVERSE: 
+successCh11: 118   successCh18: 289 	successCh26: 0 	successMean: 300
+
+MDS normal:
+RefNode: 140 Success: 300 out of  300 experiments
+MDS Reverse: 
+RefNode: 152 Success: 300 out of  300 experiments
+
+3 Interferers:
+rssi:
+NORMAL: successCh11: 53   successCh18: 293 	successCh26: 0 	successMean: 299 
+REVERSE: successCh11: 40   successCh18: 299 	successCh26: 0 	successMean: 299 
+
+
+MDS normal:
+RefNode: 140 Success: 299 out of  300 experiments
+MDS Reverse:
+RefNode: 152 Success: 298 out of  300 experiments
+
+1 Interferer:
+rssi: 
+NORMAL: successCh11: 7   successCh18: 249 	successCh26: 0 	successMean: 300 
+REVERSE: successCh11: 97   successCh18: 300 	successCh26: 0 	successMean: 300 
+
+MDS Normal:
+RefNode: 140 Success: 300 out of  300 experiments
+MDS Reverse: 
+RefNode: 152 Success: 300 out of  300 experiments
+
+
+####################
+Simple-Bayesian vs others
+4th Floor 2nd row Window (South Side, long side)
+rssi:
+NORMAL: successCh11: 402   successCh18: 2 	successCh26: 6 	successMean: 1124 
+REVERSE: successCh11: 1642   successCh18: 1 	successCh26: 14 	successMean: 883
+
+MDS Normal:
+RefNode: 154 Success: 0 out of  2000 experiments
+MDS Reverse:
+RefNode: 97 Success: 871 out of  2000 experiments
+
+######################
+1-Packet:
+4th Floor South 1st Row Aisle 
+NORMAL:successCh11: 42   successCh18: 1848 	successCh26: 0 	successMean: 1996
+REVERSE: successCh11: 0   successCh18: 1997 	successCh26: 0 	successMean: 259
+MDS NORMAL: RefNode: 16 Success: 1062 out of  2000 experiments
+MDS REVERSE: RefNode: 153 Success: 1 out of  2000 experiments
+
+4th Floor South 2nd Row Window 
+NORMAL: successCh11: 598   successCh18: 3 	successCh26: 7 	successMean: 1105
+REVERSE: successCh11: 1673   successCh18: 0 	successCh26: 1 	successMean: 854
+MDS NORMAL: RefNode: 154 Success: 0 out of  2000 experiments
+MDS REVERSE: RefNode: 97 Success: 257 out of  2000 experiments
+
+8-Packet:
+4th Floor South 1st Row Aisle 
+NORMAL: successCh11: 54   successCh18: 1841 	successCh26: 0 	successMean: 1994
+REVERSE: successCh11: 0   successCh18: 1998 	successCh26: 0 	successMean: 213 
+MDS NORMAL: RefNode: 16 Success: 395 out of  2000 experiments
+MDS REVERSE: RefNode: 153 Success: 2 out of  2000 experiments
+
+4th Floor South 2nd Row Window 
+NORMAL: successCh11: 446   successCh18: 2 	successCh26: 6 	successMean: 1109
+REVERSE: successCh11: 1647   successCh18: 0 	successCh26: 3 	successMean: 883
+MDS NORMAL: 154 Success: 0 out of  2000 experiments
+MDS REVERSE: 97 Success: 575 out of  2000 experiments

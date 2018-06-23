@@ -1,0 +1,93 @@
+library(ggplot2)
+library(RColorBrewer)
+
+dataTypes <- c("NorthSide","Rayleigh")
+dataType <- dataTypes[1]
+
+if (dataType == "NorthSide")
+{  
+  ###################################
+  #North Side
+  plotName <- "bayesianV1vsMDSvsGreedy-North"
+  experimentSize <- 692
+  dataNames <- c("PNSD","MDS","Greedy Avg", "Greedy AvgCh11", "Greedy AvgCh18", "Greedy Avg26");
+  results <- matrix(data = c(
+                      692,692,    # PNSD - Probabilistic Node Sequence Discovery
+                      692,692,    # MDS
+                      601,692, # Greedy Avg
+                      65, 131,    # Greedy AvgCh11    
+                      690, 573, #Greedy AvgCh18
+                      25,25       #Greedy AvgCh26
+                      ),
+              ncol = 2, byrow = TRUE, 
+              dimnames = list(dataNames,     # Rownames
+                              c("LeftToRight", "RightToLeft"))                  # Colnames
+            ) 
+  #################################
+}
+
+## Cluster  vs no cluster
+# experimentSize <- 2000
+# dataNames <- c("PNSD with Clustering","PNSD without Clustering");
+# results <- matrix(data = c(
+#   2000,1871,    # PNSD - Probabilistic Node Sequence Discovery without Clustering
+#   2000,1871    # PNSD - Probabilistic Node Sequence Discovery with Clustering
+# ),
+# ncol = 2, byrow = TRUE, 
+# dimnames = list(dataNames,     # Rownames
+#                 c("LeftToRight", "RightToLeft"))                  # Colnames
+# ) 
+
+if (dataType == "Rayleigh")
+{
+  # RAyleigh Simulation
+  plotName <- "bayesianV1vsMDSvsGreedy-RayleighSim"
+  experimentSize <- 2000
+  dataNames <- c("PNSD","MDS","Greedy Avg", "Greedy AvgCh11", "Greedy AvgCh18", "Greedy Avg26");
+  results <- matrix(data = c(
+                            2000,2000,    # PNSD - Probabilistic Node Sequence Discovery
+                            1737, 1702,    # MDS
+                            2000,2000, # Greedy Avg
+                            775, 637,    # Greedy AvgCh11    
+                            750, 673, #Greedy AvgCh18
+                            758, 639       #Greedy AvgCh26
+                          ),
+                      ncol = 2, byrow = TRUE, 
+                      dimnames = list(dataNames,     # Rownames
+                                      c("LeftToRight", "RightToLeft"))                  # Colnames
+                    ) 
+
+}
+# Convert to percents:
+results <- round((results/experimentSize) * 100,2)
+
+results <- melt(results)
+
+colnames(results)=c("algorithm","direction", "success")
+
+#reorder bars
+results <- within(results, algorithm <- factor(algorithm, levels = dataNames))
+
+theme_update(axis.title.x = element_text(size = 12, vjust = -0.25),
+             axis.title.y = element_text(size = 12, angle = 90, vjust = 0.25),
+             axis.text.x = element_text(size = 11),
+             axis.text.y = element_text(size = 11),
+             panel.background = element_blank(),
+             panel.grid.major = element_line(colour = "grey90"),
+             legend.position = "bottom",
+             legend.box = "horizontal",
+             legend.key = element_blank(), 
+             legend.background = element_rect(fill="white", size=0.25),
+              legend.text = element_text(size=10))
+
+p <- ggplot (results, aes(x=direction, y=success, fill=algorithm)) + geom_bar(stat="identity", position="dodge")
+p<- p + geom_bar(stat="identity", position="dodge", colour="white", show_guide=FALSE) # to hide legend slashes
+p <- p + labs(x="Direction", y="Success (%)")
+p <- p + scale_fill_manual(name="Algorithm", values = (brewer.pal(6,"Paired")), guide=guide_legend(nrow=2,))
+p <- p + geom_text(data=results, aes(y=(success),label=paste(success,"%",sep="")),position=position_dodge(width=0.9), size=3, vjust=0)
+#p <- p + geom_text(data=results, aes(y=(50), label=algorithm),position=position_dodge(width=0.9), size=3.5, vjust=0, angle=90)
+
+                           
+print(p)
+print(plotName)
+ggsave(filename=paste("./plots/",plotName,".pdf",sep=""), plot=p, width=6.86, height=5)

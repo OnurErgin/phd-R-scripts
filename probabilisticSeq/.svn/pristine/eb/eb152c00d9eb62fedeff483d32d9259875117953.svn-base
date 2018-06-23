@@ -1,0 +1,74 @@
+###
+## 	countProbResults.R 01.11.2013 oergin
+# 	counts results from files that contain sequences
+# 	v2 - Works without modification.
+### ------
+
+source("configuration.R")
+
+# Below are obtained from configuration.R
+#
+#	Truth<-c(16,138,96,141,92,145,88,147,10,153);
+#	refnode <- 16
+#	numnodes <- 10
+# Truth <- rev(Truth)
+WD <- getwd()
+setwd (outputDirectory) # from configuration.R
+
+files <- Sys.glob("probabilitySeqDF*txt")
+print(files)
+
+totalSuccess <- 0
+totalChecks <- 0
+
+
+failIndexes <- c()
+failSequences <- matrix(data = NA, nrow = 0, ncol = 1+numnodes, byrow = TRUE, dimnames = list(NULL,c("ExpNo",paste("N",1:numnodes,sep=""))))
+failRealIndexes <- c()
+
+i <- 0
+for (resultFile in files)
+{
+	i <- i+1
+	probabilitySeqDF <- read.table(resultFile, header=TRUE)
+	
+	## RESULT
+	winningSequence <- probabilitySeqDF[which.max(probabilitySeqDF$prob),1:numnodes] 
+	verdict <- all(winningSequence == Truth)
+	print(probabilitySeqDF[which.max(probabilitySeqDF$prob),]); cat("Winner is:", verdict,"\n"); 
+	if(verdict == TRUE)
+	{
+		totalSuccess <- totalSuccess +1
+	}
+	else {
+		failedRealIndex <- as.numeric(gsub("\\D", "", resultFile))
+		failIndexes <- c(failIndexes,i)
+		failSequences <- rbind(failSequences,cbind("ExpNo"=failedRealIndex,winningSequence))
+		failRealIndexes <- c(failRealIndexes,failedRealIndex)
+	}
+	
+		
+	totalChecks <- totalChecks +1
+	cat("TotalSUCCESS=",totalSuccess, "/",totalChecks,"=",totalSuccess/totalChecks, " in", length(files),"files\n");
+
+}
+
+if (length(failRealIndexes) > 0)
+{
+	failSequences <- failSequences[order(failSequences[,1]),] #Sort using ExpNo
+	rownames(failSequences)<-1:nrow(failSequences)
+	failRealIndexes <- sort(failRealIndexes)
+	
+	write.table(failIndexes, file="failIndexes.txt", sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+	write.table(failSequences, file="failSequences.txt", sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+}
+
+setwd(WD)
+
+cat("Failed sequences:",nrow(failSequences),"\n")
+print (failSequences)
+#print (failIndexes)
+cat("Failed experiments:",length(failRealIndexes),"\n")
+print(failRealIndexes)
+
+cat("TotalSUCCESS=",totalSuccess, "/",totalChecks,"=",totalSuccess/totalChecks, " in", length(files),"files\n");	# Repeat print

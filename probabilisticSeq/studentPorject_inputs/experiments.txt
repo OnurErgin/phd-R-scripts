@@ -1,0 +1,45 @@
+1. experiment
+
+Channels: 11,12,18,19,26
+Number of measurements: 3
+Filename: lowpower.txt
+Power: 7
+
+2. experiment
+
+Channels: 11 to 26
+Number of measurements: 5
+Filename: lowpower2.txt
+Power: 7
+
+Time: 9m42.446s
+
+3. experiments
+
+Channels: 11 to 26
+Number of measurements: 1
+Filename: lowpower3.txt
+Power: 7
+
+Time: 2m38.089s
+
+4. experiments
+
+Channels: 11 to 26
+Number of measurements: 2
+Filename: lowpower4.txt
+Power: 7
+
+Time: 4m23.797s
+
+5. experiments
+
+Channels: 11 to 26
+Number of measurements: 4
+Filename: lowpower5.txt
+Power: 31
+
+Time: 3m13.834s
+
+
+Node order: 3, 359, 356, 363, 5, 368, 333, 4, 369, 365, 2, 334

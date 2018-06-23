@@ -1,0 +1,54 @@
+library(plyr)
+library(reshape)
+library(MASS)
+
+EXP_SIZE <- 1000
+DATA_FILE <- "distance_vector_stats_all_channels_wcnt-2.csv.txt"
+## DATA_FILE <- "distance_vector_stats_all_channels_4thFl.csv.txt"
+
+## real_sequence<-c("16","138","96","141","92","145","88","147","10","153");
+
+## real_sequence<-c("186", "100", "188", "85", "214", "82", "202", "79", "197")
+real_sequence<-c("100", "188", "85", "214", "82", "202", "79", "197")
+
+dv_type <- "max_rssi"
+
+mds_node_sequence<-vector("list", EXP_SIZE)
+
+all_stats <- read.table(DATA_FILE, sep=",", colClasses=c(rep("factor",2), rep("numeric",12)), header=TRUE)
+
+
+all_stats_rssi <- subset(all_stats, (sender!="186" & receiver!="186"), select=c(run, sender, receiver, max_rssi))
+
+## all_stats_rssi <- subset(all_stats, select=c(run, sender, receiver, max_rssi))
+
+## all_stats_rssi_distance <- mutate(all_stats_rssi, distance=d_path_loss(pr=max_rssi, n=3))
+
+all_stats_rssi_distance <- mutate(all_stats_rssi, distance=max_rssi)
+
+
+for (i in 1:EXP_SIZE) {
+  run_rssi_distance <- subset(all_stats_rssi_distance, run==i)
+
+  run_rssi_distance_c <- cast(run_rssi_distance, receiver ~ sender, fill=-100, value="distance")
+
+  run_rssi_distance_d <-as.dist(run_rssi_distance_c)
+
+   mds_node_coordinates<- cmdscale(run_rssi_distance_d,k=1)
+
+  sequence<-names(sort(mds_node_coordinates[,1]))
+  
+  mds_node_sequence[[i]]<-sequence
+  if (sequence[length(sequence)]==real_sequence[[1]]) mds_node_sequence[[i]]<-rev(sequence)
+}
+
+correct<-lapply(mds_node_sequence, identical, real_sequence)
+length(correct[correct==TRUE])
+  
+binaryResults <- c()
+for(i in 1:length(mds_node_sequence))
+{
+	binaryResults <- rbind(binaryResults,all(mds_node_sequence[[i]]==real_sequence))
+}
+print(paste("Success:",sum(binaryResults)))
+

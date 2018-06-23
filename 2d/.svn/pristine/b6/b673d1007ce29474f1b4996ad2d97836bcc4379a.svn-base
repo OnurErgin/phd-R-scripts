@@ -1,0 +1,204 @@
+###
+##
+# This file keeps results from 2D , MDS-MAP and RADAR NN-Fingerprinting for comparisons. 
+## R Studio Bug: if switch() cases start with a non-string '_', and you "source" it, then the R studio session fails.  eg switch (type,_5x4-3mx3m={...})
+
+
+getResult <- function (topology,noise) {
+  ## MDS-MAP and Fingerprinting Algorithms are given 3 anchors at 3 corners of the grid  <- c(Truth[1,1],Truth[Ny,1],Truth[Ny,Nx]) # Three corners
+  
+  #success[] Indices:
+  xours <- 1; xSMDSMAPavgrssi <- 2; xSMDSMAPmaxrssi <- 3; xFPavgrssi <- 4; xFPmaxrssi <- 5; 
+  xnames <- c()
+  xnames[xours] <- "Ours"; xnames[xSMDSMAPavgrssi] <- "sMDS-MAP (avgRSS)"; xnames[xSMDSMAPmaxrssi] <- "sMDS-MAP (maxRSS)"; 
+  xnames[xFPavgrssi] <- "Fingerprinting (avgRSS)"; xnames[xFPmaxrssi] <- "Fingerprinting (maxRSS)"
+  
+  success <- c()
+  switch(noise,
+         "-45" = { 
+                  switch (topology,
+                    "5x4-3mx3m"={
+                      total <- 100
+                      success[xours] <- 93 # 2D-equiDistance 
+                      success[xSMDSMAPavgrssi] <- 100 # Smacof MDS-MAP with avg_rssi
+                      success[xSMDSMAPmaxrssi] <- -1 # Smacof MDS-MAP with max_rssi
+                      success[xFPavgrssi] <- 12 # Fingerprinting with avg_rssi
+                      success[xFPmaxrssi] <- 1 # Fingerprinting with max_rssi
+                    },
+                    
+                    "5x4-5mx5m"={
+                      total <- 100
+                      success[xours] <- 93 # 2D-equiDistance
+                      success[xSMDSMAPavgrssi] <- 100 # Smacof MDS-MAP with avg_rssi
+                      success[xSMDSMAPmaxrssi] <- -1 # Smacof MDS-MAP with max_rssi
+                      success[xFPavgrssi] <- 12 # Fingerprinting with avg_rssi
+                      success[xFPmaxrssi] <- 1 # Fingerprinting with max_rssi
+                    },
+                    "5x4-10mx10m"={
+                      total <- 100
+                      success[xours] <- 91 # 2D-equiDistance
+                      success[xSMDSMAPavgrssi] <- 100 # Smacof MDS-MAP with avg_rssi
+                      success[xSMDSMAPmaxrssi] <- -1 # Smacof MDS-MAP with max_rssi
+                      success[xFPavgrssi] <- 26 # Fingerprinting with avg_rssi
+                      success[xFPmaxrssi] <- 1 # Fingerprinting with max_rssi
+                    },
+                    "10x5-3mx3m"={
+                      total <- 100
+                      success[xours] <- 85 # 2D-equiDistance
+                      success[xSMDSMAPavgrssi] <- 99 # Smacof MDS-MAP with avg_rssi
+                      success[xSMDSMAPmaxrssi] <- -1 # Smacof MDS-MAP with max_rssi
+                      success[xFPavgrssi] <- 0 # Fingerprinting with avg_rssi
+                      success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                    },
+                    "10x2-3mx3m"={
+                      total <- 100
+                      success[xours] <- 97 # 2D-equiDistance
+                      success[xSMDSMAPavgrssi] <- 9 # Smacof MDS-MAP with avg_rssi
+                      success[xSMDSMAPmaxrssi] <- 9 # Smacof MDS-MAP with max_rssi
+                      success[xFPavgrssi] <- 0 # Fingerprinting with avg_rssi
+                      success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                    }
+                  ) # Switch type
+           
+         }, 
+         "-30" = {
+           switch (topology,
+                   "5x4-3mx3m"={
+                     total <- 100
+                     success[xours] <- -1 # 2D-equiDistance 
+                     success[xSMDSMAPavgrssi] <- 100 # Smacof MDS-MAP with avg_rssi
+                     success[xSMDSMAPmaxrssi] <- 9 # Smacof MDS-MAP with max_rssi
+                     success[xFPavgrssi] <- 36 # Fingerprinting with avg_rssi
+                     success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                   },
+                   
+                   "5x4-5mx5m"={
+                     total <- 100
+                     success[xours] <- -1 # 2D-equiDistance
+                     success[xSMDSMAPavgrssi] <- 98 # Smacof MDS-MAP with avg_rssi
+                     success[xSMDSMAPmaxrssi] <- 0 # Smacof MDS-MAP with max_rssi
+                     success[xFPavgrssi] <- 14 # Fingerprinting with avg_rssi
+                     success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                   },
+                   "5x4-10mx10m"={
+                     total <- 100
+                     success[xours] <- -1 # 2D-equiDistance
+                     success[xSMDSMAPavgrssi] <- 84 # Smacof MDS-MAP with avg_rssi
+                     success[xSMDSMAPmaxrssi] <- 0 # Smacof MDS-MAP with max_rssi
+                     success[xFPavgrssi] <- 0 # Fingerprinting with avg_rssi
+                     success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                   },
+                   "10x5-3mx3m"={
+                     total <- 100
+                     success[xours] <- -1 # 2D-equiDistance
+                     success[xSMDSMAPavgrssi] <- 0 # Smacof MDS-MAP with avg_rssi
+                     success[xSMDSMAPmaxrssi] <- 0 # Smacof MDS-MAP with max_rssi
+                     success[xFPavgrssi] <- 0 # Fingerprinting with avg_rssi
+                     success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                   },
+                   "10x2-3mx3m"={
+                     total <- 100
+                     success[xours] <- 92 # 2D-equiDistance
+                     success[xSMDSMAPavgrssi] <- 0 # Smacof MDS-MAP with avg_rssi
+                     success[xSMDSMAPmaxrssi] <- 0 # Smacof MDS-MAP with max_rssi
+                     success[xFPavgrssi] <- 2 # Fingerprinting with avg_rssi
+                     success[xFPmaxrssi] <- 0 # Fingerprinting with max_rssi
+                   }
+           ) # Switch type
+           
+         }
+  ) #switch noise
+  names(success) <- xnames
+  print(success)
+  return(success)
+}
+
+plotSuccess <- function (results, saveToFile=FALSE)
+{
+  library(ggplot2)
+  library(RColorBrewer)
+  library(reshape)
+  
+  plotName <- "Plot name"
+  dataNames <- c("2d","MDS"); dimensionNames <- c("5x4", "10x2") 
+  
+  
+  resultsDF <- data.frame(name=names(results), success=results)
+  
+  #results <- melt(results)
+  
+  #reorder bars
+  resultsDF <- within(resultsDF, name <- factor(name, levels = names(results)))
+  
+  #results <- within(results, algorithm <- factor(algorithm, levels = dataNames))
+  #results <- within(results, dimension <- factor(dimension, levels = dimensionNames))
+  #browser()
+  theme_update(axis.title.x = element_text(size = 20, vjust = -0.25),
+               axis.title.y = element_text(size = 20, angle = 90, vjust = 0.25),
+               axis.text.x = element_text(size = 16, color="black"),
+               axis.text.y = element_text(size = 16, color="black"),
+               title = element_text(size=20),
+               panel.background = element_blank(),
+               panel.grid.major = element_line(colour = "grey90"),
+               legend.position = "bottom",
+               legend.box = "horizontal",
+               legend.key = element_blank(), 
+               legend.background = element_rect(fill="white", size=0.25),
+               legend.text = element_text(size=14))
+  
+  p <- ggplot (resultsDF, aes(x=name, y=success, fill=name)) + geom_bar(stat="identity", position="dodge")
+  p <- p + geom_bar(stat="identity", position="dodge", colour="white", show_guide=FALSE) # to hide legend slashes
+  p <- p + labs(x="Grid Dimensions") + scale_y_continuous("Success [%]", limits=c(0,100))
+  p <- p + scale_fill_manual(name="Algorithm", values = rev(brewer.pal(6,"YlGnBu")), guide=guide_legend(nrow=2,))
+  p <- p + geom_text(data=resultsDF, aes(y=(success),label=paste(success,"%",sep="")),position=position_dodge(width=0.9), size=3, vjust=0)
+  p <- p + geom_text(data=resultsDF, aes(y=(30),label=paste(name,"!",sep="")),position=position_dodge(width=0.9), size=7, vjust=2, angle=90)
+  #p <- p + geom_text(data=results, aes(y=(50), label=algorithm),position=position_dodge(width=0.9), size=3.5, vjust=0, angle=90)
+  p <- p + ggtitle(plotName)
+  
+  print(p)
+  if (saveToFile)
+  {
+    cat(plotName, "saving...\n")
+    ggsave(filename=paste("./plots/",plotName,".pdf",sep=""), plot=p, width=6.86, height=5)
+    
+  }
+}
+
+res <- getResult ("5x4-10mx10m", "-45")
+
+
+plotSuccess(res, saveToFile=FALSE)
+
+getReliability <- function (topology,noise){
+  success <- c()
+  switch(noise,
+         "-45" = {
+           switch (topology,
+                   "5x4-3mx3m"={
+                     success <- -1
+                     fail    <- -1
+                     highReliableSuccess <- -1
+                     highReliableFail    <- -1
+                     mediumReliableSuccess <- -1
+                     mediumReliableFail    <- -1
+                     lowReliableSuccess    <- -1
+                     lowReliableFail       <- -1
+                   }
+           )
+         }, 
+         "-30" = {
+           switch (topology,
+                   "5x4-3mx3m"={
+                     success <- -1
+                     fail    <- -1
+                     highReliableSuccess <- -1
+                     highReliableFail    <- -1
+                     mediumReliableSuccess <- -1
+                     mediumReliableFail    <- -1
+                     lowReliableSuccess    <- -1
+                     lowReliableFail       <- -1
+                   }
+           )
+         }
+  )
+}

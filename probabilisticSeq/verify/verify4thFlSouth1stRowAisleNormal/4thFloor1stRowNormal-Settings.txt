@@ -1,0 +1,72 @@
+"x"
+"1" "/lhome/ergin/measurements/4thFloor/FourthFloor_chLoop2000withPktID/measurements/"
+"x"
+"1" 1
+"2" 600
+"x"
+"1" "verify4thFlSouth1stRowAisleNormal/4thFloor1stRowNormal-verify1-600.txt"
+"x"
+"1" 16
+"2" 138
+"3" 96
+"4" 141
+"5" 92
+"6" 145
+"7" 88
+"8" 147
+"9" 10
+"10" 153
+"x"
+"1" "/lhome/ergin/measurements/4thFloor/FourthFloor_chLoop2000withPktID/measurements/"
+"x"
+"1" 601
+"2" 1200
+"x"
+"1" "verify4thFlSouth1stRowAisleNormal/4thFloor1stRowNormal-verify601-1200.txt"
+"x"
+"1" 16
+"2" 138
+"3" 96
+"4" 141
+"5" 92
+"6" 145
+"7" 88
+"8" 147
+"9" 10
+"10" 153
+"x"
+"1" "/lhome/ergin/measurements/4thFloor/FourthFloor_chLoop2000withPktID/measurements/"
+"x"
+"1" 1201
+"2" 1800
+"x"
+"1" "verify4thFlSouth1stRowAisleNormal/4thFloor1stRowNormal-verify1201-1800.txt"
+"x"
+"1" 16
+"2" 138
+"3" 96
+"4" 141
+"5" 92
+"6" 145
+"7" 88
+"8" 147
+"9" 10
+"10" 153
+"x"
+"1" "/lhome/ergin/measurements/4thFloor/FourthFloor_chLoop2000withPktID/measurements/"
+"x"
+"1" 1801
+"2" 2000
+"x"
+"1" "verify4thFlSouth1stRowAisleNormal/4thFloor1stRowNormal-verify1801-2000.txt"
+"x"
+"1" 16
+"2" 138
+"3" 96
+"4" 141
+"5" 92
+"6" 145
+"7" 88
+"8" 147
+"9" 10
+"10" 153

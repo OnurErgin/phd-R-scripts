@@ -1,0 +1,95 @@
+source("../commonFunctions.R")
+
+library(ggplot2)
+
+
+#source("parameters.R")
+# Radio parameters
+Pt_dbm <- 0 
+fc1 <- 2.405e9
+spacing <- 0.005e9
+channels <- (11:26)
+ch1 <- channels[1]
+ch2fc <- function (ch, firstChannel=ch1, firstFreq= fc1, ch_spacing=spacing) {return((ch-firstChannel)*ch_spacing + firstFreq)}
+radioSensitivity <- -97
+
+# Node Settings
+d <- 3 # internode distances
+numnodes <- 10
+nodes <- c(1:numnodes) # ids
+refnode <- 1
+distances <- seq(0,(numnodes-1)*d,d)
+getDistance <- function(n1,n2) {abs(which(nodes==n1) - which(nodes==n2))*d}
+
+numpackets <- 40
+
+# Channel Settings
+pathloss_alpha <- 3
+
+test_distances <- seq(1,27,1)
+test_distances <- seq(3,27,3)
+sd_rayleigh <- 15
+mean_rayleigh <- 0
+
+sd_noise_dbm <- -45 
+mean_noise <- 0
+
+sd_noise_mW <- dbm2mw (sd_noise_dbm)
+Pt_mW <- dbm2mw (Pt_dbm)
+
+fc <- fc1
+
+shots <- 40*16
+#shots<-1
+D <- c()
+C <- c()
+
+dWalls <- 3 #meter
+
+randData <- matrix(data = NA, nrow = 0, ncol = 2, byrow = TRUE, dimnames = list(NULL,c("Distance","RSS")))
+for (td in test_distances ) {
+  A <- c()
+  for (i in 1:shots) {
+    h <- rayleigh_rnd(mean_rayleigh, sd_rayleigh)
+    Pn <- rnorm(1, mean=0, sd=sd_noise_mW)
+    P <- Pr_in_mW(Pt_mW, fc, td, pathloss_alpha, h, Pn)
+    #P <- Pr_in_mW_obs(Pt_mW, fc, td, pathloss_alpha, h, Pn,dWalls)
+    rssi <- round(mw2dbm(P)) - 5
+    if (rssi > radioSensitivity | TRUE) {
+      A <- c(A,rssi)	
+      randData <- rbind(randData, c(td,rssi))
+    }
+  }
+  D<-c(D,mean((A)))
+  C <- c(C,A)	
+}
+
+randData <- as.data.frame(randData)
+mainTitle <- "Produced values with Rayleigh Distribution"
+
+theme_set(theme_bw(10))
+
+
+theme_update (
+              panel.grid.major = theme_blank(),
+              panel.grid.minor = theme_blank(),
+              #panel.border = theme_blank(),
+              panel.border = element_rect(linetype = "solid", colour = "grey", fill = NA),
+              panel.background = theme_blank(),
+              axis.title = element_text(size=30 ),
+              axis.text = element_text(size=16),
+              plot.title = element_text(size=30, face="bold")
+              #plot.margin = unit(c(1,1,1,1), "cm")
+              )
+
+p <- ggplot(randData, aes(x=Distance, y=RSS, group=Distance))
+p <- p + stat_boxplot(geom='errorbar') + geom_boxplot()
+ #p <- p + geom_point()# + geom_line
+#p <- p + stat_summary(fun.y=mean, geom="line", aes(group=1))  + stat_summary(fun.y=mean, geom="point")
+p <- p + scale_x_continuous("Distance[m]",breaks=seq(3,27,3)) +scale_y_continuous("RSS[dBm]",expand = c(0,0.5), limits = c(-105,-40), breaks=floor(seq(-110,-40,by=10)))
+#p <- p + geom_vline(xintercept=seq(dWalls,max(test_distances), by=dWalls), color="darkblue")
+p <- p + geom_hline(yintercept=radioSensitivity, color="orange") + annotate("text",label="Sensitivity Threshold",y=radioSensitivity-2, x=8, color="black", size=7)
+p <- p + ggtitle("Simulated RSS values")
+print(p)
+#ggsave("simulatedRSS.pdf", width=7, height=7)
+#plot(randData$Distance,randData$RSS,pch=20, ylab="RSSI", xlab="Node Id (distance sorted)", ylim=c(-105,-42)); title(mainTitle)

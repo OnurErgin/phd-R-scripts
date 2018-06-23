@@ -1,0 +1,8 @@
+dx = 1m
+dy = 3m
+Nx= 6 nodes
+Ny= 2 nodes
+
+Ground Truth:
+PC- 10 -   8 - 17 -   9 - 11 - 6
+    7  -  13 -  2 -  14 - 15 - 4

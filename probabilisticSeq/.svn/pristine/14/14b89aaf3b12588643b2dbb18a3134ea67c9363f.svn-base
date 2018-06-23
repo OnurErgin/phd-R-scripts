@@ -1,0 +1,114 @@
+###
+## 	countProbResults.R 01.11.2013 oergin
+# 	counts results from files that contain sequences
+# 	v2 - Works without modification.
+### ------
+
+source("configuration.R")
+
+# Below are obtained from configuration.R
+#
+#	Truth<-c(16,138,96,141,92,145,88,147,10,153);
+#	refnode <- 16
+#	numnodes <- 10
+# Truth <- rev(Truth)
+WD <- getwd()
+setwd (outputDirectory) # from configuration.R
+
+files <- Sys.glob("probabilitySeqDF*txt")
+#print(files)
+
+totalSuccess <- 0
+totalChecks <- 0
+
+failSequences <- matrix(data = NA, nrow = 0, ncol = 1+numnodes, byrow = TRUE, dimnames = list(NULL,c("ExpNo",paste("N",1:numnodes,sep=""))))
+failRealIndexes <- c()
+
+TrustColumns <- c("expNo","verdict","P1","P2","NP1","NP2","NPdiff") # NP: Normalized Probability
+Trust <- matrix(data = NA, nrow = length(files), ncol = length(TrustColumns), byrow = TRUE, dimnames = list(NULL,TrustColumns))
+
+JointPcolumns <- c("expNo","verdict","rank",paste("JP",1:numnodes,sep=""))
+maxRankLevel <- 2
+JointP <- matrix(data = NA, nrow = length(files)*maxRankLevel, ncol = length(JointPcolumns), byrow = TRUE, dimnames = list(NULL,JointPcolumns))
+  
+i <- 0
+
+for (resultFile in files)
+{
+  i <- i+1
+  
+  expNo <- as.numeric(gsub("\\D", "", resultFile))
+  
+  probabilitiesDF_FILE <- paste("probabilitiesDF",expNo,".txt",sep="")
+	
+  probabilitySeqDF <- read.table(resultFile, header=TRUE)
+  probabilitiesDF <- read.table(probabilitiesDF_FILE, header=TRUE)
+  
+  pOrder <- with(probabilitySeqDF,order(-prob))
+  probabilitySeqDF <- probabilitySeqDF[pOrder,] #ordered
+  probabilitiesDF <- probabilitiesDF[pOrder,] #ordered according to P of above
+	## RESULT
+	#winningSequence <- probabilitySeqDF[which.max(probabilitySeqDF$prob),1:numnodes] 
+	winningSequence <- probabilitySeqDF[1,1:numnodes]
+	verdict <- all(winningSequence == Truth)
+	print(probabilitySeqDF[which.max(probabilitySeqDF$prob),]); cat("Winner is:", verdict,"\n"); 
+	if(verdict == TRUE)
+	{
+		totalSuccess <- totalSuccess +1
+	}
+	else {
+		failSequences <- rbind(failSequences,cbind("ExpNo"=expNo,winningSequence))
+		failRealIndexes <- c(failRealIndexes,expNo)
+	}
+	
+		
+	totalChecks <- totalChecks +1
+	cat("ExpNo:",expNo,"\nTotalSUCCESS=",totalSuccess, "/",totalChecks,"=",totalSuccess/totalChecks, " in", length(files),"files\n");
+  
+  # Compute Trust Entity
+  P1 <- probabilitySeqDF[1,"P"]
+  P2 <- probabilitySeqDF[2,"P"]
+
+  NP1 <- P1/(P1+P2)
+  NP2 <- P2/(P1+P2)
+  NPdiff <- NP1-NP2
+  Trust[i,] <- c(expNo,as.numeric(verdict),P1,P2,NP1,NP2,NPdiff)
+  
+  
+  for(r in 1:maxRankLevel) {
+    jpList <- c()
+    for (n in 1:numnodes)
+    {
+      jpList <- c(jpList,prod(probabilitiesDF[r,1:n]))
+    }
+    JointP[(i-1)*maxRankLevel+r,] <- c(expNo,as.numeric(verdict),r,jpList)
+  }
+  
+}
+
+if (length(failRealIndexes) > 0)
+{
+	failSequences <- failSequences[order(failSequences[,1]),] #Sort using ExpNo
+	rownames(failSequences)<-1:nrow(failSequences)
+	failRealIndexes <- sort(failRealIndexes)
+	
+	write.table(failSequences, file="failSequences.txt", sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+}
+
+# Write Trust Table into a file
+#Trust <- Trust [with(Trust,order(expNo)),] # Atomic vectorlerle calismiyor galiba
+Trust <- Trust[order(Trust[,"expNo"]),]
+write.table(Trust, file="Trust.txt", sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+
+JointP <- JointP[order(JointP[,"expNo"]),]
+write.table(JointP, file="JointP.txt", sep=" ", append=FALSE, col.names=TRUE, row.names=FALSE)
+
+setwd(WD)
+
+cat("Failed sequences:",nrow(failSequences),"\n")
+print (failSequences)
+
+cat("Failed experiments:",length(failRealIndexes),"\n")
+print(failRealIndexes)
+
+cat("TotalSUCCESS=",totalSuccess, "/",totalChecks,"=",totalSuccess/totalChecks, " in", length(files),"files\n");	# Repeat print

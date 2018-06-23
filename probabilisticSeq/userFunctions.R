@@ -1,0 +1,273 @@
+# Depreciated.. unnecessary now.
+print("Loading userFunctions.R")
+
+
+mostFreqReceiver <- function (valueSet, tIndex=1) { mfr <- names(rev(sort(table(valueSet)))[tIndex]); return(mfr) }
+findProbability <- function (valueSet, tIndex=1, setLength) { rev(sort(table(valueSet)))[tIndex]/setLength }
+findProbabilityByName <- function (valueSet, name){table(valueSet[as.character(name)])/length(valueSet)}
+findWeight <- function(placedReceivers, weightSet) { ix<-(placedReceivers+1); return(weightSet[ix]) }
+
+setTruth <- function (TruthList,referencenode) { #print(TruthList)
+  if (TruthList[length(TruthList)] == referencenode)
+    return(rev(TruthList))
+  else
+    return(TruthList)
+}
+
+computeProbabilities <- function (probDF, vRows){
+  probs <- c()
+  for(rr in 1:vRows)
+  {
+    prob <- 1
+    if (TRUE)
+      for (cc in 1:ncol(probDF))
+      {
+        #cat(" probabilitiesDF[",rr,",",cc,"]=",probabilitiesDF[rr,cc], sep="")
+        prob <- prob * probDF[rr,cc]
+      }
+    prob <- prod(probDF[rr,])
+    #print("\n")
+    probs <- c(probs,prob)
+    #cat("probabilitySeqDF[",rr,",prob] <- ",prob,"=>",probabilitySeqDF[rr,"prob"],"\n",sep="")
+  }
+  #print(probabilitySeqDF[1:validRows,]); #print(probabilitiesDF)
+  return(probs)
+}
+
+getSendersWinningReceivers <- function (allPackets, theSender, excludeList=NULL, includeList=NULL) {
+  
+  if (is.null(excludeList) && is.null(includeList)) 
+  {
+    thisFunctionsName <- match.call()[[1]]
+    stop (paste("In ", thisFunctionsName,", excludeList and includeList cannot be both NULL!"))
+  } 
+  else if (!is.null(excludeList) && !is.null(includeList)) 
+  {
+    thisFunctionsName <- match.call()[[1]]
+    stop (paste("In ", thisFunctionsName,", excludeList and includeList cannot be both non-NULL!"))
+  } 
+  else if (!is.null(excludeList)) 
+    senderPackets <- subset(allPackets, sender == theSender & !(receiver %in% excludeList), select=c(-time,-power)) 
+  else if (!is.null(includeList))
+    senderPackets <- subset(allPackets, sender == theSender & (receiver %in% includeList), select=c(-time,-power))
+   
+  if (!exists("senderPackets") || nrow(senderPackets)==0) {
+    cat(paste("No packets found from sender",theSender,"to receivers:",paste(excludeList,sep=','),paste(includeList,sep=',')))
+    # Above was stop(...), below was not there
+    return(NA)
+  }
+  
+  packetNums <- unique(senderPackets$packetnum)
+  channelSet <- unique(packets$channel)
+  
+  sendersWinningReceivers <- c()
+  for (c in channelSet) 
+  {
+    for (n in packetNums) 
+    {
+      sendersNthPackets <- subset(senderPackets,packetnum==n&channel==c)	 # find all reports for {s, c, n}
+      theWinningReceiver <- -9999 #impossible receiver
+      
+      #sendersNthPackets <- sendersNthPackets[order(-sendersNthPackets[,"rssi"]),]  # reorder by rssi, big to small
+      #theWinningReceiver <- as.numeric(as.character(sendersNthPackets[1,"receiver"])) # find the receiver with best rssi
+      #theWinningRssi <- as.numeric(as.character(sendersNthPackets[1,"rssi"])) # find the rssi of the best receiver
+      #sendersWinningReceivers <- c(sendersWinningReceivers,theWinningReceiver) # put it into the list.
+      
+      #rssMaxDifference <- 2 # now in configuration.R
+      rssDifference <- 0
+      
+      firstRssiDummy <- -1000
+      firstRssi <- firstRssiDummy # impossible rssi, so 1st iteration of loop actuates
+      
+      while (rssDifference <= rssMaxDifference)
+      {
+        sendersNthPackets <- subset(sendersNthPackets, receiver!=theWinningReceiver)
+        if (nrow(sendersNthPackets) == 0) # if there was only one receiver, strange measurement!.
+          break
+        sendersNthPackets <- sendersNthPackets[order(-sendersNthPackets[,"rssi"]),]  # reorder by rssi, big to small
+        
+        theWinningReceiver <- as.numeric(as.character(sendersNthPackets[1,"receiver"])) # find the receiver with best rssi
+        theWinningRssi <- as.numeric(as.character(sendersNthPackets[1,"rssi"])) # find the rssi of the best receiver
+        
+        rssDifference <- firstRssi - theWinningRssi
+        #cat("rssDifference=",rssDifference, "firstRssi=",firstRssi, "theWinningRssi=",theWinningRssi,"theWinningReceiver=",theWinningReceiver , "at c =",c,"n =",n,"for sender:",s,"\n")
+        
+        if(rssDifference <= rssMaxDifference)
+        {
+          sendersWinningReceivers <- c(sendersWinningReceivers,theWinningReceiver) # put it into the list.
+          
+          if (firstRssi != firstRssiDummy && FALSE)
+          {
+            cat("rssDifference=",rssDifference, "firstRssi=",firstRssi, "theWinningRssi=",theWinningRssi,"theWinningReceiver=",theWinningReceiver , "at c =",c,"n =",n,"for sender:",s,"\n")
+            cat ("Just inserted", theWinningReceiver,":",theWinningRssi,"\n")
+          }
+        }
+        else
+          next
+        
+        if (firstRssi == firstRssiDummy)  # set just once
+          firstRssi <- theWinningRssi
+      }
+      
+      if (c==13 && FALSE)
+      {stop ("Stopped after c=13"); warning ("warning iste.")}
+    } # for n
+  } # for c
+  sendersWinningReceivers <- sendersWinningReceivers[!is.na(sendersWinningReceivers)]   # remove NAs
+  return (sendersWinningReceivers)
+}
+
+getSendersFreqTable <- function (allPackets, theSender, excludeList=NULL, includeList=NULL) {
+  
+  if (is.null(excludeList) && is.null(includeList)) 
+  {
+    thisFunctionsName <- match.call()[[1]]
+    stop (paste("In ", thisFunctionsName,", excludeList and includeList cannot be both NULL!"))
+  } 
+  else if (!is.null(excludeList) && !is.null(includeList)) 
+  {
+    thisFunctionsName <- match.call()[[1]]
+    stop (paste("In ", thisFunctionsName,", excludeList and includeList cannot be both non-NULL!"))
+  } 
+  else if (!is.null(excludeList)) 
+    senderPackets <- subset(allPackets, sender == theSender & !(receiver %in% excludeList), select=c(-time,-power)) 
+  else if (!is.null(includeList))
+    senderPackets <- subset(allPackets, sender == theSender & (receiver %in% includeList), select=c(-time,-power))
+  
+  if (!exists("senderPackets") || nrow(senderPackets)==0)
+    stop(paste("No packets found from sender",theSender,"to receivers:",paste(excludeList,sep=','),paste(includeList,sep=',')))
+  
+  packetNums <- unique(senderPackets$packetnum)
+  channelSet <- unique(packets$channel)
+  
+  placeHolderStr <- "placeholder"
+  sendersFreqTable<-c()
+  sendersFreqTable[placeHolderStr] <- -999
+  for (c in channelSet) 
+  {
+    for (n in packetNums) 
+    {
+      sendersNthPackets <- subset(senderPackets,packetnum==n&channel==c)   # find all reports for {s, c, n}
+      theWinningReceiver <- -9999 #impossible receiver
+      
+      #rssMaxDifference <- 2 # now in configuration.R
+      rssDifference <- 0
+      
+      firstRssiDummy <- -1000
+      firstRssi <- firstRssiDummy # impossible rssi, so 1st iteration of loop actuates
+      
+      while (rssDifference <= rssMaxDifference)
+      {
+        sendersNthPackets <- subset(sendersNthPackets, receiver!=theWinningReceiver)
+        if (nrow(sendersNthPackets) == 0) # if there was only one receiver, strange measurement!.
+          break
+        sendersNthPackets <- sendersNthPackets[order(-sendersNthPackets[,"rssi"]),]  # reorder by rssi, big to small
+        
+        theWinningReceiver <- as.numeric(as.character(sendersNthPackets[1,"receiver"])) # find the receiver with best rssi
+        theWinningRssi <- as.numeric(as.character(sendersNthPackets[1,"rssi"])) # find the rssi of the best receiver
+        
+        rssDifference <- firstRssi - theWinningRssi
+        #cat("rssDifference=",rssDifference, "firstRssi=",firstRssi, "theWinningRssi=",theWinningRssi,"theWinningReceiver=",theWinningReceiver , "at c =",c,"n =",n,"for sender:",s,"\n")
+        
+        if(rssDifference <= rssMaxDifference && !is.na(theWinningReceiver))
+        {
+          ## Add to the table
+          
+          if(is.na(sendersFreqTable[as.character(theWinningReceiver)]))
+            sendersFreqTable[as.character(theWinningReceiver)]<-0
+          sendersFreqTable[as.character(theWinningReceiver)] <- sendersFreqTable[as.character(theWinningReceiver)]+1
+          
+        }
+        else
+          next
+        
+        if (firstRssi == firstRssiDummy)  # set just once
+          firstRssi <- theWinningRssi
+      }
+      
+      if (c==13 && FALSE)
+      {stop ("Stopped after c=13"); warning ("warning iste.")}
+    } # for n
+  } # for c
+  sendersFreqTable <- sendersFreqTable[-which(names(sendersFreqTable)==placeHolderStr)]
+  return (sendersFreqTable)
+}
+
+FASTgetSendersFreqTable <- function (allPackets, theSender, excludeList=NULL, includeList=NULL) {
+  
+  ## dd<-ddply(packets,c("sender","channel","packetnum"), function(DF) DF[DF$rssi == max(DF$rssi),c(-5,-6)])
+  ## names(dd)[4]<-"max_rssi"
+  
+  if (is.null(excludeList) && is.null(includeList)) 
+  {
+    thisFunctionsName <- match.call()[[1]]
+    stop (paste("In ", thisFunctionsName,", excludeList and includeList cannot be both NULL!"))
+  } 
+  else if (!is.null(excludeList) && !is.null(includeList)) 
+  {
+    thisFunctionsName <- match.call()[[1]]
+    stop (paste("In ", thisFunctionsName,", excludeList and includeList cannot be both non-NULL!"))
+  } 
+  else if (!is.null(excludeList)) 
+    senderPackets <- subset(allPackets, sender == theSender & !(receiver %in% excludeList), select=c(-time,-power)) 
+  else if (!is.null(includeList))
+    senderPackets <- subset(allPackets, sender == theSender & (receiver %in% includeList), select=c(-time,-power))
+  
+  if (!exists("senderPackets") || nrow(senderPackets)==0)
+    stop(paste("No packets found from sender",theSender,"to receivers:",paste(excludeList,sep=','),paste(includeList,sep=',')))
+  
+  packetNums <- unique(senderPackets$packetnum)
+  channelSet <- unique(packets$channel)
+  
+  placeHolderStr <- "placeholder"
+  sendersFreqTable<-c()
+  sendersFreqTable[placeHolderStr] <- -999
+  for (c in channelSet) 
+  {
+    for (n in packetNums) 
+    {
+      sendersNthPackets <- subset(senderPackets,packetnum==n&channel==c)   # find all reports for {s, c, n}
+      theWinningReceiver <- -9999 #impossible receiver
+      
+      #rssMaxDifference <- 2 # now in configuration.R
+      rssDifference <- 0
+      
+      firstRssiDummy <- -1000
+      firstRssi <- firstRssiDummy # impossible rssi, so 1st iteration of loop actuates
+      
+      while (rssDifference <= rssMaxDifference)
+      {
+        sendersNthPackets <- subset(sendersNthPackets, receiver!=theWinningReceiver)
+        if (nrow(sendersNthPackets) == 0) # if there was only one receiver, strange measurement!.
+          break
+        sendersNthPackets <- sendersNthPackets[order(-sendersNthPackets[,"rssi"]),]  # reorder by rssi, big to small
+        
+        theWinningReceiver <- as.numeric(as.character(sendersNthPackets[1,"receiver"])) # find the receiver with best rssi
+        theWinningRssi <- as.numeric(as.character(sendersNthPackets[1,"rssi"])) # find the rssi of the best receiver
+        
+        rssDifference <- firstRssi - theWinningRssi
+        #cat("rssDifference=",rssDifference, "firstRssi=",firstRssi, "theWinningRssi=",theWinningRssi,"theWinningReceiver=",theWinningReceiver , "at c =",c,"n =",n,"for sender:",s,"\n")
+        
+        if(rssDifference <= rssMaxDifference && !is.na(theWinningReceiver))
+        {
+          ## Add to the table
+          
+          if(is.na(sendersFreqTable[as.character(theWinningReceiver)]))
+            sendersFreqTable[as.character(theWinningReceiver)]<-0
+          sendersFreqTable[as.character(theWinningReceiver)] <- sendersFreqTable[as.character(theWinningReceiver)]+1
+          
+        }
+        else
+          next
+        
+        if (firstRssi == firstRssiDummy)  # set just once
+          firstRssi <- theWinningRssi
+      }
+      
+      if (c==13 && FALSE)
+      {stop ("Stopped after c=13"); warning ("warning iste.")}
+    } # for n
+  } # for c
+  sendersFreqTable <- sendersFreqTable[-which(names(sendersFreqTable)==placeHolderStr)]
+  return (sendersFreqTable)
+}

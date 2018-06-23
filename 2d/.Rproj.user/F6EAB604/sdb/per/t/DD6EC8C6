@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "library(reshape)\nlibrary(ggplot)\nlibrary(grid)\nlibrary(animation)\n\na_nodeseq <- as.matrix(read.table(text='\"0\"  \"10\" \"1\"  \"11\" \"2\"  \"12\" \"3\"  \"13\" \"14\" \"15\" \"4\"  \"5\"  \"16\" \"6\"  \"7\"  \"17\" \"8\"  \"18\" \"9\"  \"19\"'),nrow=2)\na_nodeseq <- c(0,10,1,11,2,12,3,13,14,15,4,5,16,6,7,17,8,18,9,19)\na_nodeseq <- matrix(a_nodeseq,nrow=2)\nTruth <- matrix(0:19,nrow=2,ncol=length(twoBy10)/2, byrow=TRUE)\n\n\ndraw_path <- function (Truth,result){\n  graph_input_truth <- melt(Truth, varnames=c(\"Y\",\"X\"))\n  graph_input <- melt(result, varnames=c(\"Y\",\"X\"))\n  graph_input_truth <- graph_input_truth[match(graph_input$value, graph_input_truth$value),]\n  \n  pl <- ggplot(graph_input_truth, aes(x=X,y=Y, label=value)) + geom_text() + scale_y_reverse()# + geom_path()\n  for(i in 2:length(Truth) ){\n    #pl <- ggplot(graph_input_truth, aes(x=X,y=Y, label=value)) + geom_text() + scale_y_reverse()# + geom_path()\n    a <- graph_input_truth[(i-1):i,]\n    pl <- pl + geom_path(data=a, aes(x=X,y=Y),arrow=arrow(), color=\"red\") + geom_point(data=a, aes(x=X,y=Y), shape=1, size=6, color=\"red\")\n    print(pl)\n    ani.pause()\n  }\n}\n\noopt = ani.options(interval = 0.3)\ndraw_path(Truth,winnerSeq) # display the animation \n\nsaveHTML(draw_path(Truth,a_nodeseq), autoplay = FALSE, loop = FALSE, verbose = FALSE, outdir =\"animated\",#  paste(getwd(),\"/animated/\",sep=\"\"),\n         single.opts = \"'controls': ['first', 'previous', 'play', 'next', 'last', 'loop', 'speed'], 'delayMin': 0\")\n\n",
+    "created" : 1417019545927.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1552998290",
+    "id" : "DD6EC8C6",
+    "lastKnownWriteTime" : 1417193932,
+    "last_content_update" : 0,
+    "path" : "~/phd/R/2d/animated_plot.R",
+    "project_path" : "animated_plot.R",
+    "properties" : {
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
